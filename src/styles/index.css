@@ -34,6 +34,11 @@
 }
 
 @layer components {
+  /* Container único: header, conteúdo e rodapé ficam sempre alinhados */
+  .page-container {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+
   .skeleton {
     background: linear-gradient(
       90deg,

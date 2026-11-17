@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { FileText, Mail, Sparkles, Undo2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Logo } from '@/components/brand/logo'
 import { Footer } from '@/components/brand/footer'
+import { SiteHeader } from '@/components/brand/site-header'
 import { ScoreRing } from '@/components/brand/score-ring'
 import { CompanyInitial, MatchPill, STATUS_ORDER, StatusPill } from '@/components/brand/pills'
 import { EmptyState } from '@/components/brand/empty-state'
-import { ThemeToggle } from '@/components/brand/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardTitle } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
@@ -50,12 +49,9 @@ export function StyleGuidePage() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="flex items-center justify-between px-4 py-4 sm:px-8">
-        <Logo />
-        <ThemeToggle />
-      </header>
+      <SiteHeader />
 
-      <main className="mx-auto w-full max-w-5xl flex-1 space-y-10 px-4 pb-12 sm:px-8">
+      <main className="page-container flex-1 space-y-10 py-8 sm:py-10">
         <section>
           <p className="text-sm font-medium uppercase tracking-wider text-terra-strong">Guia visual</p>
           <h1 className="mt-1 text-3xl sm:text-4xl">Seu próximo emprego começa com um bom currículo.</h1>
@@ -101,7 +97,7 @@ export function StyleGuidePage() {
 
         <section aria-labelledby="botoes">
           <h2 id="botoes" className="mb-4 text-2xl">Botões</h2>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-3">
             <Button>
               <Sparkles aria-hidden /> Adaptar
             </Button>
@@ -114,7 +110,9 @@ export function StyleGuidePage() {
             </Button>
             <Button variant="linkedin">Entrar com LinkedIn</Button>
             <Button loading>Analisando…</Button>
-            <Button variant="link">Voltar</Button>
+            <Button variant="link" className="min-h-touch px-2">
+              Voltar
+            </Button>
           </div>
         </section>
 
