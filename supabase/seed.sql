@@ -1,0 +1,1 @@
+-- Dados de exemplo para desenvolvimento local (preenchido na Etapa 3).

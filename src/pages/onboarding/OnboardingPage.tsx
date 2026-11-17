@@ -1,0 +1,195 @@
+import { useMemo, useState } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { LogOut } from 'lucide-react'
+import { toast } from 'sonner'
+import { Footer } from '@/components/brand/footer'
+import { SiteHeader } from '@/components/brand/site-header'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { LoadingCards } from '@/components/ui/skeleton'
+import { useAuth } from '@/lib/auth'
+import type { CountryCode } from '@/lib/countries'
+import { friendlyDataError } from '@/lib/errors'
+import { useProfile, useUpdateProfile } from '@/lib/profile'
+import { supabase } from '@/lib/supabase'
+import { loadDraft, useAutosaveDraft } from '@/lib/use-draft'
+import { AboutStep, type AboutValues } from './AboutStep'
+import { ResumeStep } from './ResumeStep'
+import { CountryStep } from './CountryStep'
+import type { InputMode } from '@/components/resume/resume-input'
+
+const STEPS = ['Sobre você', 'Seu currículo', 'País do currículo'] as const
+
+export interface OnboardingDraft {
+  step: number
+  about: AboutValues
+  resume: { mode: InputMode; text: string }
+  country: CountryCode
+  resumeId: string | null
+}
+
+export function OnboardingPage() {
+  const { user, signOut } = useAuth()
+  const { data: profile, isLoading, error } = useProfile()
+
+  if (isLoading || (!profile && !error)) {
+    return (
+      <Shell onSignOut={signOut}>
+        <LoadingCards count={1} label="Carregando seu perfil…" />
+      </Shell>
+    )
+  }
+  if (error || !profile) {
+    return (
+      <Shell onSignOut={signOut}>
+        <p role="alert" className="rounded-card border border-danger/30 bg-danger-soft p-5">
+          {friendlyDataError(error, 'Não conseguimos carregar seu perfil.')}
+        </p>
+      </Shell>
+    )
+  }
+  if (profile.onboarded_at) return <Navigate to="/" replace />
+
+  const draftKey = `vp-onboarding-${user!.id}`
+  const initial: OnboardingDraft = loadDraft<OnboardingDraft>(draftKey) ?? {
+    step: 0,
+    about: {
+      full_name: profile.full_name ?? '',
+      desired_role: profile.desired_role ?? '',
+      city: profile.city ?? '',
+    },
+    resume: { mode: 'pdf', text: '' },
+    country: profile.resume_country ?? 'BR',
+    resumeId: null,
+  }
+
+  return (
+    <Shell onSignOut={signOut}>
+      <Wizard draftKey={draftKey} initial={initial} />
+    </Shell>
+  )
+}
+
+function Shell({ children, onSignOut }: { children: React.ReactNode; onSignOut: () => void }) {
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <SiteHeader
+        actions={
+          <Button variant="ghost" onClick={onSignOut} className="text-muted">
+            <LogOut aria-hidden /> <span className="hidden sm:inline">Sair</span>
+            <span className="sr-only sm:hidden">Sair</span>
+          </Button>
+        }
+      />
+      <main className="page-container flex-1 py-8 sm:py-12">
+        <div className="mx-auto w-full max-w-2xl">{children}</div>
+      </main>
+      <Footer />
+    </div>
+  )
+}
+
+function Wizard({ draftKey, initial }: { draftKey: string; initial: OnboardingDraft }) {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const updateProfile = useUpdateProfile()
+  const [draft, setDraft] = useState<OnboardingDraft>(initial)
+  const [direction, setDirection] = useState(1)
+  const { savedAt, discard } = useAutosaveDraft(draftKey, draft)
+
+  const patch = (p: Partial<OnboardingDraft>) => setDraft((d) => ({ ...d, ...p }))
+  const go = (step: number) => {
+    setDirection(step > draft.step ? 1 : -1)
+    patch({ step })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function saveAbout(values: AboutValues) {
+    try {
+      await updateProfile.mutateAsync(values)
+      patch({ about: values })
+      go(1)
+    } catch (err) {
+      toast.error(friendlyDataError(err, 'Não conseguimos salvar seus dados.'))
+    }
+  }
+
+  async function finish(country: CountryCode) {
+    try {
+      if (draft.resumeId) {
+        await supabase.from('resumes').update({ country }).eq('id', draft.resumeId)
+      }
+      await updateProfile.mutateAsync({ resume_country: country, onboarded_at: new Date().toISOString() })
+      discard()
+      toast.success('Tudo pronto!', { description: 'Seu espaço no VagaPronta está preparado.' })
+      navigate('/', { replace: true })
+    } catch (err) {
+      toast.error(friendlyDataError(err, 'Não conseguimos concluir agora.'))
+    }
+  }
+
+  const progress = useMemo(() => ((draft.step + 1) / STEPS.length) * 100, [draft.step])
+  const greeting = draft.about.full_name.trim().split(/\s+/)[0]
+
+  return (
+    <div>
+      <div className="mb-8">
+        <p className="text-sm font-medium text-terra-strong">
+          Passo {draft.step + 1} de {STEPS.length} · {STEPS[draft.step]}
+        </p>
+        <Progress value={progress} className="mt-2" label={`Passo ${draft.step + 1} de ${STEPS.length}`} hideLabel />
+        {savedAt && (
+          <p className="mt-2 text-xs text-muted" aria-live="polite">
+            Rascunho salvo automaticamente
+          </p>
+        )}
+      </div>
+
+      <AnimatePresence mode="wait" initial={false} custom={direction}>
+        <motion.section
+          key={draft.step}
+          custom={direction}
+          initial={{ opacity: 0, x: 24 * direction }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -24 * direction }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          aria-labelledby="onboarding-title"
+        >
+          {draft.step === 0 && (
+            <AboutStep
+              defaultValues={draft.about}
+              onChange={(about) => patch({ about })}
+              onSubmit={saveAbout}
+            />
+          )}
+          {draft.step === 1 && (
+            <ResumeStep
+              userId={user!.id}
+              greeting={greeting}
+              country={draft.country}
+              resume={draft.resume}
+              resumeId={draft.resumeId}
+              onChange={(resume) => patch({ resume })}
+              onSaved={(resumeId) => {
+                patch({ resumeId })
+                go(2)
+              }}
+              onSkip={() => go(2)}
+              onBack={() => go(0)}
+            />
+          )}
+          {draft.step === 2 && (
+            <CountryStep
+              value={draft.country}
+              onChange={(country) => patch({ country })}
+              onBack={() => go(1)}
+              onFinish={finish}
+              saving={updateProfile.isPending}
+            />
+          )}
+        </motion.section>
+      </AnimatePresence>
+    </div>
+  )
+}
