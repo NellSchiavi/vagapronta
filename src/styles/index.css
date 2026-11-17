@@ -1,0 +1,47 @@
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-bg font-sans text-[15px] leading-relaxed text-ink antialiased;
+    min-height: 100dvh;
+  }
+  h1, h2, h3 {
+    @apply font-serif font-medium tracking-tight text-ink;
+  }
+  ::selection {
+    @apply bg-terra-soft text-ink;
+  }
+  /* foco visível em todo elemento navegável pelo teclado */
+  :focus-visible {
+    outline: 2px solid rgb(var(--terra));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--track)) 0px,
+      rgb(var(--line) / 0.5) 120px,
+      rgb(var(--track)) 240px
+    );
+    background-size: 800px 100%;
+    @apply animate-shimmer rounded-field;
+  }
+}

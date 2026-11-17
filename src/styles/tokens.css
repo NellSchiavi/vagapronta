@@ -1,0 +1,72 @@
+/*
+ * Design system do VagaPronta — tokens de cor em canais RGB
+ * (permite usar opacidade no Tailwind: bg-terra/10).
+ *
+ * Observação de acessibilidade (contraste AA, 4,5:1 para texto comum):
+ *  - #C2622D sobre branco fica em 4,1:1. Por isso a terracota "forte"
+ *    (#A9521F) é usada em textos e no fundo de botões com texto branco.
+ *    A terracota original segue em ícones, anéis, bordas e destaques.
+ *  - #7A6F66 sobre o creme fica em 4,4:1. O texto secundário usa
+ *    #756A61, visualmente igual e dentro do AA.
+ */
+:root {
+  --bg: 247 242 234;            /* #F7F2EA creme */
+  --card: 255 255 255;          /* #FFFFFF */
+  --ink: 43 38 34;              /* #2B2622 texto principal */
+  --muted: 117 106 97;          /* #756A61 texto secundário (ajuste AA de #7A6F66) */
+  --line: 232 223 211;          /* #E8DFD3 bordas */
+  --line-strong: 205 189 168;   /* #CDBDA8 bordas de campos / botões secundários */
+  --track: 241 232 220;         /* #F1E8DC trilho do anel de nota */
+
+  --terra: 194 98 45;           /* #C2622D destaque */
+  --terra-strong: 169 82 31;    /* #A9521F texto e botões (AA) */
+  --terra-soft: 248 230 218;    /* #F8E6DA */
+
+  --success: 47 125 91;         /* #2F7D5B */
+  --success-strong: 31 92 66;   /* #1F5C42 "Oferta" */
+  --success-soft: 226 241 233;  /* #E2F1E9 */
+
+  --info: 46 94 140;            /* #2E5E8C */
+  --info-soft: 227 236 246;     /* #E3ECF6 */
+
+  --danger: 163 45 45;          /* #A32D2D */
+  --danger-soft: 248 228 228;
+
+  --neutral: 107 101 96;        /* cinza "Recusada" */
+  --neutral-soft: 237 233 228;
+
+  --on-accent: 255 255 255;
+
+  color-scheme: light;
+}
+
+.dark {
+  --bg: 28 23 19;               /* marrom bem escuro */
+  --card: 39 33 28;
+  --ink: 243 236 226;           /* creme */
+  --muted: 184 171 157;
+  --line: 61 52 45;
+  --line-strong: 94 80 68;
+  --track: 58 48 40;
+
+  --terra: 226 132 82;
+  --terra-strong: 232 145 98;
+  --terra-soft: 64 41 28;
+
+  --success: 109 190 150;
+  --success-strong: 140 214 176;
+  --success-soft: 30 55 44;
+
+  --info: 126 170 214;
+  --info-soft: 30 44 60;
+
+  --danger: 234 124 124;
+  --danger-soft: 66 32 32;
+
+  --neutral: 176 168 160;
+  --neutral-soft: 52 46 41;
+
+  --on-accent: 28 23 19;
+
+  color-scheme: dark;
+}
