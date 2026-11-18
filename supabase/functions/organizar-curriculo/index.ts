@@ -7,6 +7,7 @@
 import { generateJson } from '../_shared/ai.ts'
 import { requireUser } from '../_shared/auth.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
+import { redactPersonalData } from '../_shared/privacy.ts'
 import { consumeQuota } from '../_shared/quota.ts'
 import { clip, sectionsSchema, type ResumeContent, type ResumeSections } from '../_shared/resume.ts'
 
@@ -24,10 +25,15 @@ e devolva SOMENTE um JSON com este formato:
 }
 Regras:
 - NÃO invente nada. Use só o que está no texto. Se algo não existir, omita o campo ou use lista vazia.
+- "resumo" é SÓ um parágrafo de apresentação escrito pela pessoa. O cargo/título no topo (ex.: "Assistente
+  Administrativa") NÃO é resumo: nesse caso omita "resumo".
+- "cidade" é só cidade e estado (ex.: "Campinas, SP"). Nunca coloque endereço nem marcadores [ENDERECO_x] em "cidade".
 - "fim": null quando for o emprego atual.
 - Mantenha o texto em português, corrigindo apenas quebras de linha e espaços.
 - Experiências da mais recente para a mais antiga.
-- No PDF do LinkedIn, ignore "Contato", "Principais competências" duplicadas, números de página e "Page X of Y".`
+- No PDF do LinkedIn, ignore "Contato", "Principais competências" duplicadas, números de página e "Page X of Y".
+- Dados pessoais foram trocados por marcadores como [EMAIL_1], [TELEFONE_1], [LINK_1], [ENDERECO_1].
+  Copie esses marcadores EXATAMENTE como estão para os campos de contato (ex.: "email": "[EMAIL_1]").`
 
 /** Organização simples usada no modo de desenvolvimento (AI_PROVIDER=mock) */
 function mockSections(text: string): ResumeSections {
@@ -73,15 +79,26 @@ Deno.serve(
     }
 
     await consumeQuota(supabase, 'organizar-curriculo')
+
+    // dados pessoais não saem do servidor: vão marcadores e voltam os valores originais
+    const redacted = redactPersonalData(clip(text))
     const sections = await generateJson({
       task: 'organizar-curriculo',
       system: SYSTEM,
-      prompt: `Texto do currículo:\n"""\n${clip(text)}\n"""`,
+      prompt: `Texto do currículo:\n"""\n${redacted.text}\n"""`,
       schema: sectionsSchema,
       temperature: 0.1,
-      mock: () => mockSections(text),
+      tier: 'lite',
+      mock: () => mockSections(redacted.text),
     })
 
-    return json({ sections })
+    // garantia extra: endereço completo não vai para o campo "cidade"
+    const c = sections.contato
+    if (c?.cidade && /\[(ENDERECO|CEP)_\d+\]/.test(c.cidade)) {
+      const city = c.cidade.replace(/\[(ENDERECO|CEP)_\d+\]/g, '').replace(/^[\s,–-]+|[\s,–-]+$/g, '')
+      c.cidade = city || undefined
+    }
+
+    return json({ sections: redacted.restore(sections) })
   }),
 )

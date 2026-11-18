@@ -1,5 +1,16 @@
 import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from '@supabase/supabase-js'
+import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
+
+/** Mostra o erro de uma ação de IA: limites viram um aviso calmo, não um erro vermelho */
+export function showAiError(err: unknown) {
+  const e = err instanceof AiError ? err : new AiError('Algo não saiu como esperado. Tente de novo em instantes.', 'erro')
+  if (e.code === 'limite_diario' || e.code.startsWith('ia_limite')) {
+    toast.info(e.message, { duration: 8000 })
+  } else {
+    toast.error(e.message)
+  }
+}
 
 /** Erro de uma ação de IA, com mensagem pronta para mostrar na tela */
 export class AiError extends Error {

@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { AlertTriangle, Check, LayoutList, RotateCw } from 'lucide-react'
+import { AlertTriangle, Check, LayoutList, RotateCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { AiProgress } from '@/components/ai/ai-progress'
 import { LinkedInIcon } from '@/components/brand/linkedin-icon'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { showAiError } from '@/lib/ai'
 import { friendlyDataError } from '@/lib/errors'
 import type { Resume, ResumeSections } from '@/lib/resume'
 import { useOrganizeResume, useSaveSections } from '@/lib/queries/resumes'
@@ -23,7 +24,7 @@ export function OrganizePanel({ resume }: { resume: Resume }) {
     setPreview(null)
     organize.mutate(resume.id, {
       onSuccess: setPreview,
-      onError: (e) => toast.error(e.message),
+      onError: showAiError,
     })
   }
 
@@ -84,8 +85,8 @@ export function OrganizePanel({ resume }: { resume: Resume }) {
 
   const fromLinkedIn = resume.source === 'linkedin'
   return (
-    <Card className="flex flex-col items-start gap-4 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-8">
-      <span className="inline-flex size-14 shrink-0 items-center justify-center rounded-full bg-terra-soft text-terra">
+    <Card className="flex flex-col items-start gap-4 border-terra/20 bg-terra-soft p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-8">
+      <span className="inline-flex size-14 shrink-0 items-center justify-center rounded-full bg-card text-terra">
         {fromLinkedIn ? <LinkedInIcon className="size-6" /> : <LayoutList className="size-6" aria-hidden />}
       </span>
       <div className="flex-1">
@@ -98,7 +99,7 @@ export function OrganizePanel({ resume }: { resume: Resume }) {
         </p>
       </div>
       <Button size="lg" onClick={run} className="w-full sm:w-auto">
-        Organizar meu currículo
+        <Sparkles aria-hidden /> Organizar com IA
       </Button>
     </Card>
   )

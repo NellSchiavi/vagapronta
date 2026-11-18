@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { LoadingCards } from '@/components/ui/skeleton'
 import { AtsTerm } from '@/components/ui/tooltip'
+import { showAiError } from '@/lib/ai'
 import { applySuggestion } from '@/lib/apply-suggestion'
 import { friendlyDataError } from '@/lib/errors'
 import type { Resume, ResumeContent } from '@/lib/resume'
@@ -52,7 +53,7 @@ export function AnalysisPanel({ resume }: { resume: Resume }) {
         })
         window.scrollTo({ top: 0, behavior: 'smooth' })
       },
-      onError: (e) => toast.error(e.message),
+      onError: showAiError,
     })
   }
 
@@ -104,7 +105,7 @@ export function AnalysisPanel({ resume }: { resume: Resume }) {
             </p>
           </div>
           <Button size="lg" onClick={run} className="w-full sm:w-auto">
-            Analisar meu currículo
+            <Sparkles aria-hidden /> Analisar meu currículo
           </Button>
         </Card>
         <SnapshotCard resume={resume} open />
@@ -120,7 +121,7 @@ export function AnalysisPanel({ resume }: { resume: Resume }) {
           <div className="flex-1">
             <p className="text-sm text-muted">Analisado em {fmtDate(latest.created_at)}</p>
             <p className="mt-1.5 text-[15px] leading-relaxed">{latest.summary}</p>
-            <Button variant="secondary" className="mt-4" onClick={run}>
+            <Button className="mt-4" onClick={run}>
               <RotateCw aria-hidden /> Analisar de novo
             </Button>
           </div>

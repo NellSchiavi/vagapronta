@@ -215,14 +215,41 @@ Os dois modelos usam `{{ .ConfirmationURL }}` (o link) e `{{ .Token }}` (o códi
 
 ## 6. Chaves do Gemini e da Adzuna
 
-### 6.1 Gemini (IA)
+### 6.1 Gemini (IA), no nível gratuito
 
-1. Acesse https://aistudio.google.com/apikey e entre com uma conta Google.
-2. Clique em **Create API key** (ou "Criar chave de API") e copie a chave.
-3. **Local:** cole em `supabase/functions/.env` (`GEMINI_API_KEY=...` e `AI_PROVIDER=gemini`) e reinicie o Supabase local.
-4. **Nuvem:** (em construção, junto com o deploy das funções)
+> ⚠️ **NÃO ATIVE O FATURAMENTO (billing).**
+> O app foi feito para o **nível gratuito** do Gemini, que não pede cartão. Se você ativar o faturamento ou vincular um cartão ao projeto do Google, as chamadas além da cota gratuita **passam a ser cobradas**. Se algum dia aparecer um botão "Set up billing", "Ativar faturamento" ou "Upgrade", **não clique**.
 
-O nível gratuito do Gemini tem limite de pedidos por dia. O limite por pessoa (`AI_DAILY_LIMIT`) existe para que vocês dois juntos não passem dele.
+**Criar a chave num projeto novo, sem cartão:**
+
+1. Acesse https://aistudio.google.com e entre com uma conta Google. Pode ser uma conta só para o app.
+2. No menu, abra **Get API key** (ou "Chaves de API").
+3. Clique em **Create API key** e escolha **"Create API key in new project"** (criar em um projeto novo). Assim a chave fica num projeto separado, sem faturamento.
+4. Copie a chave. Ela aparece uma vez só e não deve ser compartilhada nem colada em arquivos que vão para o git.
+5. Confira que a coluna **"Plan"** (ou "Plano") da chave mostra **"Free"** (gratuito). Se mostrar "Paid", o projeto tem faturamento: crie outro projeto novo.
+
+**Onde colocar a chave:**
+
+- **Local:** em `supabase/functions/.env` (nunca no `.env.example`):
+  ```
+  AI_PROVIDER=gemini
+  GEMINI_API_KEY=sua-chave
+  ```
+  Depois rode `npx supabase stop` e `npx supabase start`.
+- **Nuvem:** (em construção, junto com o deploy das funções)
+
+**Limites do nível gratuito:**
+
+- **Pedidos por minuto e por dia:** o Google limita os dois. Quando o limite do dia acaba, o app mostra "A IA descansou por hoje. Tente de novo amanhã!". O limite por pessoa (`AI_DAILY_LIMIT`, padrão 40) existe para que vocês dois juntos não cheguem lá.
+- **Horários de pico:** o Google às vezes responde "alta demanda". O app tenta de novo sozinho e, se preciso, usa outro modelo. Por isso uma análise pode levar até 1 minuto.
+
+**Modelos:**
+
+- **Tarefas simples (organizar o currículo):** usam um modelo "lite", que é mais leve e economiza cota.
+- **Análise, adaptação e cartas:** usam o modelo "flash".
+- **Troca de modelo:** as variáveis `GEMINI_MODEL` e `GEMINI_MODEL_LITE` aceitam uma lista, em ordem de preferência. Os modelos da versão 2.5 não são mais oferecidos a chaves novas.
+
+**Privacidade:** antes de enviar o currículo para a IA, o app troca **e-mail, telefone, CPF, CEP, endereço e links pessoais** por marcadores (`[EMAIL_1]`, `[TELEFONE_1]`…). Esses dados nunca saem do servidor do app e são recolocados no resultado. Veja `supabase/functions/_shared/privacy.ts`.
 
 ### 6.2 Adzuna (vagas) (em construção)
 

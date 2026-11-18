@@ -9,6 +9,7 @@ import { z } from 'npm:zod@3.24.1'
 import { generateJson } from '../_shared/ai.ts'
 import { requireUser } from '../_shared/auth.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
+import { redactPersonalData } from '../_shared/privacy.ts'
 import { consumeQuota } from '../_shared/quota.ts'
 import { clip, COUNTRY_RULES, resumeToText, type ResumeContent } from '../_shared/resume.ts'
 
@@ -62,8 +63,14 @@ Regras das sugestões (de 3 a 6, as mais importantes primeiro):
 - "experiencia": "antes" é um trecho copiado EXATAMENTE de uma descrição de experiência; "depois" é a versão melhorada desse trecho.
 - "habilidades": "antes" é ""; "depois" é uma lista separada por vírgulas SÓ com as habilidades novas a acrescentar.
 - "formacao": "antes" é ""; "depois" é UM curso ou certificação a acrescentar, ex.: "Excel Avançado — Fundação Bradesco (online, gratuito)".
-- Nunca invente experiências, empresas, datas ou números que não estejam no currículo. Para números, use marcadores como "[X]" para a pessoa completar.
-- Escreva no idioma do currículo.`
+- Nunca invente experiências, empresas, datas, números, porcentagens ou resultados que não estejam no currículo.
+  Para números e resultados, use "[X]" para a pessoa completar (ex.: "reduzindo erros em [X]%").
+  Não use afirmações absolutas como "100% de eficiência".
+- Em "habilidades", sugira só termos ligados ao que a pessoa já faz nas experiências descritas,
+  e na "explicacao" lembre que ela deve incluir apenas o que realmente sabe fazer.
+- Escreva no idioma do currículo.
+- Dados pessoais foram trocados por marcadores como [EMAIL_1] e [TELEFONE_1]. Isso é normal: não sugira
+  "adicionar contato" por causa deles e, se precisar citá-los, copie o marcador exatamente.`
 
 /** Resposta de exemplo usada no modo de desenvolvimento (AI_PROVIDER=mock) */
 function mockAnalysis(text: string, firstDescription: string | undefined, hasSummary: boolean): Analysis {
@@ -132,6 +139,8 @@ Deno.serve(
 
     await consumeQuota(supabase, 'analisar-curriculo')
 
+    // dados pessoais não saem do servidor: vão marcadores e voltam os valores originais
+    const redacted = redactPersonalData(clip(text))
     const prompt = [
       `Cargo desejado: ${profile?.desired_role || 'não informado'}`,
       `Cidade: ${profile?.city || 'não informada'}`,
@@ -139,18 +148,20 @@ Deno.serve(
       '',
       'Currículo:',
       '"""',
-      clip(text),
+      redacted.text,
       '"""',
     ].join('\n')
 
-    const analysis = await generateJson({
+    const raw = await generateJson({
       task: 'analisar-curriculo',
       system: SYSTEM,
       prompt,
       schema: analysisSchema,
       temperature: 0.3,
+      tier: 'standard',
       mock: () => mockAnalysis(text, content.sections?.experiencias?.[0]?.descricao, Boolean(content.sections?.resumo)),
     })
+    const analysis = redacted.restore(raw)
 
     const { data: saved, error: saveError } = await supabase
       .from('resume_analyses')

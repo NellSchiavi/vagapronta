@@ -25,6 +25,7 @@ export interface HomeFollowUp {
 
 export interface HomeData {
   hasResume: boolean
+  isOrganized: boolean
   score: number | null
   scoreDelta: number | null
   applications: number
@@ -45,7 +46,10 @@ export function useHomeData() {
     enabled: Boolean(user),
     queryFn: async (): Promise<HomeData> => {
       const [resumesRes, appsRes, jobsRes] = await Promise.all([
-        supabase.from('resumes').select('id, is_principal, job_id, updated_at').order('updated_at', { ascending: false }),
+        supabase
+          .from('resumes')
+          .select('id, is_principal, job_id, updated_at, sections:content->sections')
+          .order('updated_at', { ascending: false }),
         supabase.from('applications').select('id, company, role, status, follow_up_on, job_id'),
         supabase
           .from('jobs')
@@ -78,6 +82,7 @@ export function useHomeData() {
         scoreDelta = data.length === 2 ? data[0].overall_score - data[1].overall_score : null
       }
 
+      const isOrganized = Boolean(principal?.sections)
       const today = toISODate()
       const todayStart = startOfToday().getTime()
       const active = apps.filter((a) => a.status === 'enviada' || a.status === 'entrevista')
@@ -113,8 +118,10 @@ export function useHomeData() {
           status,
           follow_up_on,
         })),
+        isOrganized,
         nextStep: computeNextStep({
           hasResume: Boolean(principal),
+          isOrganized,
           latestScore: score,
           followUps: active,
           newJobs: jobs,

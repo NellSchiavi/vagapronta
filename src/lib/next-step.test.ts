@@ -4,6 +4,7 @@ import { greetingFor } from './greeting'
 
 const base: NextStepInput = {
   hasResume: true,
+  isOrganized: true,
   latestScore: 80,
   followUps: [],
   newJobs: [],
@@ -23,8 +24,16 @@ describe('computeNextStep', () => {
     expect(s.action.to).toBe('/curriculo')
   })
 
-  it('currículo sem análise pede a primeira nota', () => {
-    expect(computeNextStep({ ...base, latestScore: null }).kind).toBe('analyze')
+  it('currículo ainda não organizado pede para organizar com IA', () => {
+    const s = computeNextStep({ ...base, isOrganized: false, latestScore: null })
+    expect(s.kind).toBe('organize')
+    expect(s.action.label).toBe('Organizar com IA')
+  })
+
+  it('currículo organizado sem análise pede a primeira nota', () => {
+    const s = computeNextStep({ ...base, latestScore: null })
+    expect(s.kind).toBe('analyze')
+    expect(s.action.label).toBe('Analisar meu currículo')
   })
 
   it('nota abaixo de 70 pede melhoria (69 sim, 70 não)', () => {

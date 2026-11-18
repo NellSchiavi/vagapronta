@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, BellRing, CalendarClock, FileText, PartyPopper, RefreshCw, Search, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
+import { ArrowRight, BellRing, CalendarClock, FileText, LayoutList, PartyPopper, RefreshCw, Search, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
 import { CompanyInitial, MatchPill, StatusPill, type ApplicationStatus } from '@/components/brand/pills'
 import { ScoreRing } from '@/components/brand/score-ring'
 import { Button } from '@/components/ui/button'
@@ -70,6 +70,7 @@ function contextLine(d: HomeData) {
 
 const NEXT_ICON = {
   upload: FileText,
+  organize: LayoutList,
   analyze: Sparkles,
   improve: TrendingUp,
   'follow-up': BellRing,
@@ -120,23 +121,29 @@ function Metrics({ data }: { data: HomeData }) {
             {data.score ?? '—'}
           </p>
           {data.score === null ? (
-            <p className="mt-1.5 text-[12.5px] text-terra-strong sm:mt-1 sm:text-sm">
-              {data.hasResume ? 'Analisar agora' : 'Envie seu currículo'}
+            <p className="mt-1.5 inline-flex items-center gap-1 text-[12.5px] font-medium text-terra-strong sm:mt-1 sm:text-sm">
+              {!data.hasResume ? 'Envie seu currículo' : !data.isOrganized ? 'Organizar com IA' : 'Analisar agora'}
+              <ArrowRight className="size-3.5 shrink-0" aria-hidden />
             </p>
           ) : (
-            data.scoreDelta !== null && data.scoreDelta !== 0 && (
-              <p
-                className={cn(
-                  'mt-1.5 inline-flex items-center gap-1 text-[12.5px] sm:mt-1 sm:text-sm',
-                  data.scoreDelta > 0 ? 'text-success' : 'text-danger',
-                )}
-              >
-                {data.scoreDelta > 0 ? <TrendingUp className="size-3.5" aria-hidden /> : <TrendingDown className="size-3.5" aria-hidden />}
-                {data.scoreDelta > 0 ? '+' : ''}
-                {data.scoreDelta}
-                <span className="hidden lg:inline">&nbsp;desde a última análise</span>
+            <>
+              {data.scoreDelta !== null && data.scoreDelta !== 0 && (
+                <p
+                  className={cn(
+                    'mt-1.5 inline-flex items-center gap-1 text-[12.5px] sm:mt-1 sm:text-sm',
+                    data.scoreDelta > 0 ? 'text-success' : 'text-danger',
+                  )}
+                >
+                  {data.scoreDelta > 0 ? <TrendingUp className="size-3.5" aria-hidden /> : <TrendingDown className="size-3.5" aria-hidden />}
+                  {data.scoreDelta > 0 ? '+' : ''}
+                  {data.scoreDelta}
+                  <span className="hidden lg:inline">&nbsp;desde a última análise</span>
+                </p>
+              )}
+              <p className="mt-1 inline-flex items-center gap-1 text-[12.5px] font-medium text-terra-strong sm:text-sm">
+                Ver análise <ArrowRight className="size-3.5 shrink-0" aria-hidden />
               </p>
-            )
+            </>
           )}
         </div>
       </Link>

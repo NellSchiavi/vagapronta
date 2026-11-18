@@ -13,6 +13,8 @@ export const HIGH_MATCH = 85
 
 export interface NextStepInput {
   hasResume: boolean
+  /** o currículo principal já foi separado em seções (necessário para analisar e aplicar sugestões) */
+  isOrganized: boolean
   latestScore: number | null
   /** candidaturas em andamento (enviada/entrevista) com data de follow-up */
   followUps: { id: string; company: string; follow_up_on: string | null; status: string }[]
@@ -24,7 +26,7 @@ export interface NextStepInput {
   today: string
 }
 
-export type NextStepKind = 'upload' | 'improve' | 'analyze' | 'follow-up' | 'adapt' | 'cheer'
+export type NextStepKind = 'upload' | 'organize' | 'improve' | 'analyze' | 'follow-up' | 'adapt' | 'cheer'
 
 export interface NextStep {
   kind: NextStepKind
@@ -47,12 +49,21 @@ export function computeNextStep(input: NextStepInput): NextStep {
     }
   }
 
+  if (!input.isOrganized) {
+    return {
+      kind: 'organize',
+      title: 'Organize seu currículo',
+      description: 'A IA separa suas experiências, formação e habilidades. Você confere antes de guardar.',
+      action: { label: 'Organizar com IA', to: '/curriculo' },
+    }
+  }
+
   if (input.latestScore === null) {
     return {
       kind: 'analyze',
       title: 'Descubra a nota do seu currículo',
       description: 'Em poucos segundos você recebe uma nota de 0 a 100 e dicas do que melhorar.',
-      action: { label: 'Analisar currículo', to: '/curriculo' },
+      action: { label: 'Analisar meu currículo', to: '/curriculo' },
     }
   }
 
