@@ -8,7 +8,13 @@ import { ThemeProvider } from '@/lib/theme'
 import { PublicOnly, RequireAuth, RequireOnboarded } from '@/routes/guards'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { HomePage } from '@/pages/home/HomePage'
-import { AdaptLettersSwitch, PlaceholderPage } from '@/pages/PlaceholderPage'
+import {
+  AdaptComingSoon,
+  ApplicationsComingSoon,
+  JobsComingSoon,
+  LettersComingSoon,
+  ResumeComingSoon,
+} from '@/pages/coming-soon'
 import { LoginPage } from '@/pages/login/LoginPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { SetupMissingPage } from '@/pages/SetupMissingPage'
@@ -39,33 +45,11 @@ export function App() {
                     <Route element={<RequireOnboarded />}>
                       <Route element={<AppLayout />}>
                         <Route path="/" element={<HomePage />} />
-                        <Route
-                          path="/curriculo"
-                          element={<PlaceholderPage title="Currículo" description="Sua nota, sugestões de melhoria e as versões do seu currículo." />}
-                        />
-                        <Route
-                          path="/adaptar"
-                          element={
-                            <>
-                              <AdaptLettersSwitch current="adaptar" />
-                              <PlaceholderPage title="Adaptar à vaga" description="Cole o anúncio de uma vaga e deixe seu currículo com a cara dela." />
-                            </>
-                          }
-                        />
-                        <Route
-                          path="/cartas"
-                          element={
-                            <>
-                              <AdaptLettersSwitch current="cartas" />
-                              <PlaceholderPage title="Cartas de apresentação" description="Cartas feitas para cada vaga, no tom que você preferir." />
-                            </>
-                          }
-                        />
-                        <Route path="/vagas" element={<PlaceholderPage title="Vagas" description="Vagas com o seu perfil, encontradas todos os dias." />} />
-                        <Route
-                          path="/candidaturas"
-                          element={<PlaceholderPage title="Candidaturas" description="Acompanhe cada candidatura, da preparação até a oferta." />}
-                        />
+                        <Route path="/curriculo" element={<ResumeComingSoon />} />
+                        <Route path="/adaptar" element={<AdaptComingSoon />} />
+                        <Route path="/cartas" element={<LettersComingSoon />} />
+                        <Route path="/vagas" element={<JobsComingSoon />} />
+                        <Route path="/candidaturas" element={<ApplicationsComingSoon />} />
                       </Route>
                     </Route>
                   </Route>

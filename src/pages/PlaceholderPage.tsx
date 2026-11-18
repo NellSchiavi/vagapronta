@@ -1,25 +1,58 @@
 import { Link } from 'react-router-dom'
-import { Hammer } from 'lucide-react'
-import { EmptyState } from '@/components/brand/empty-state'
+import { ArrowLeft, Check, type LucideIcon } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-/** Tela provisória para as seções que ainda vão ser construídas */
-export function PlaceholderPage({ title, description }: { title: string; description: string }) {
+interface ComingSoonProps {
+  title: string
+  /** frase curta abaixo do título da página */
+  description: string
+  icon: LucideIcon
+  /** o que a tela vai fazer, em uma frase ("Aqui você vai…") */
+  promise: string
+  /** até 3 coisas que a pessoa vai poder fazer */
+  features: string[]
+}
+
+/**
+ * Estado "Em breve" das telas que ainda estão sendo construídas.
+ * Deixa claro para quem testa que é esperado, e o que vai existir ali.
+ */
+export function ComingSoonPage({ title, description, icon: Icon, promise, features }: ComingSoonProps) {
   return (
     <div>
       <PageHeader title={title} description={description} />
-      <EmptyState
-        icon={Hammer}
-        title="Estamos preparando esta parte"
-        description="Em breve ela fica pronta. Enquanto isso, volte para o Início."
-        action={
-          <Button asChild variant="secondary">
-            <Link to="/">Voltar ao Início</Link>
-          </Button>
-        }
-      />
+      <section
+        aria-labelledby="em-breve-titulo"
+        className="mx-auto flex max-w-xl flex-col items-center rounded-card border border-line bg-card px-6 py-10 text-center sm:px-10"
+      >
+        <span className="relative mb-5 inline-flex size-16 items-center justify-center rounded-full bg-terra-soft text-terra">
+          <Icon className="size-7" aria-hidden />
+        </span>
+        <span className="rounded-full bg-info-soft px-3 py-1 text-xs font-medium uppercase tracking-wider text-info">
+          Em breve
+        </span>
+        <h2 id="em-breve-titulo" className="mt-3 text-[22px] leading-snug sm:text-[24px]">
+          {promise}
+        </h2>
+        <ul className="mt-5 space-y-2.5 text-left">
+          {features.map((f) => (
+            <li key={f} className="flex items-start gap-2.5 text-[15px]">
+              <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
+                <Check className="size-3.5" strokeWidth={2.5} aria-hidden />
+              </span>
+              {f}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-6 text-sm text-muted">Esta parte ainda está sendo preparada. Por enquanto, é normal ela estar vazia.</p>
+        <Button asChild variant="secondary" className="mt-5">
+          <Link to="/">
+            <ArrowLeft aria-hidden /> Voltar ao Início
+          </Link>
+        </Button>
+      </section>
     </div>
   )
 }
