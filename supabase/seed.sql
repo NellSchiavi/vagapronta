@@ -11,6 +11,9 @@
 -- Para apagar só estes dados: rode supabase/apagar_seed.sql (veja o README).
 -- =====================================================================
 
+-- datas relativas (current_date) no horário de Brasília, não em UTC
+set time zone 'America/Sao_Paulo';
+
 -- ---------------------------------------------------------------------
 -- Usuários (o perfil é criado pelo gatilho handle_new_user)
 -- ---------------------------------------------------------------------
@@ -244,7 +247,7 @@ insert into public.applications (user_id, job_id, resume_id, cover_letter_id, co
    'Adaptar o currículo destacando design systems.', null, 0, now() - interval '1 day'),
   ('5eed0000-0000-4000-8000-00000000000a', '5eed0000-0000-4000-8000-0000000a0104', '5eed0000-0000-4000-8000-0000000a0201', '5eed0000-0000-4000-8000-0000000a0301',
    'Stone', 'Desenvolvedor React', 'https://exemplo.com/vagas/stone-react', 'enviada', current_date - 8,
-   null, current_date + 1, 0, now() - interval '8 days'),
+   'Mandar mensagem para a recrutadora perguntando sobre o andamento.', current_date - 1, 0, now() - interval '8 days'),
   ('5eed0000-0000-4000-8000-00000000000a', null, '5eed0000-0000-4000-8000-0000000a0201', null,
    'Mercado Livre', 'Desenvolvedor Front-end', null, 'entrevista', current_date - 16,
    'Teste técnico entregue. Próxima etapa: entrevista com o time.', current_date + 2, 0, now() - interval '16 days'),
