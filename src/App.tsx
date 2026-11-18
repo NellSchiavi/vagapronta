@@ -13,8 +13,8 @@ import {
   ApplicationsComingSoon,
   JobsComingSoon,
   LettersComingSoon,
-  ResumeComingSoon,
 } from '@/pages/coming-soon'
+import { ResumePage } from '@/pages/resume/ResumePage'
 import { LoginPage } from '@/pages/login/LoginPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { SetupMissingPage } from '@/pages/SetupMissingPage'
@@ -45,7 +45,7 @@ export function App() {
                     <Route element={<RequireOnboarded />}>
                       <Route element={<AppLayout />}>
                         <Route path="/" element={<HomePage />} />
-                        <Route path="/curriculo" element={<ResumeComingSoon />} />
+                        <Route path="/curriculo" element={<ResumePage />} />
                         <Route path="/adaptar" element={<AdaptComingSoon />} />
                         <Route path="/cartas" element={<LettersComingSoon />} />
                         <Route path="/vagas" element={<JobsComingSoon />} />

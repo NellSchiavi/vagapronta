@@ -13,8 +13,7 @@ import {
 } from '@/components/resume/resume-input'
 import type { CountryCode } from '@/lib/countries'
 import { friendlyDataError } from '@/lib/errors'
-import type { ResumeContent } from '@/lib/resume'
-import { asJson, supabase } from '@/lib/supabase'
+import { createResume } from '@/lib/queries/resumes'
 
 interface Props {
   userId: string
@@ -52,38 +51,20 @@ export function ResumeStep({ userId, greeting, country, resume, resumeId, onChan
     }
     setSaving(true)
     try {
-      let file_path: string | null = null
-      if (value.file) {
-        const path = `${userId}/${crypto.randomUUID()}.pdf`
-        const { error: upErr } = await supabase.storage
-          .from('curriculos')
-          .upload(path, value.file, { contentType: 'application/pdf' })
-        if (upErr) {
-          // o texto já foi lido; segue sem o arquivo original
-          toast.warning('Guardamos o texto, mas não o arquivo PDF.', { description: 'Você pode enviar o PDF de novo depois.' })
-        } else {
-          file_path = path
-        }
-      }
-
-      const content: ResumeContent = { raw_text: value.text.trim(), sections: null }
-      const row = {
-        title: 'Currículo principal',
-        content: asJson(content),
+      const { id, fileSaved } = await createResume({
+        userId,
+        text: value.text,
+        file: value.file,
         source: sourceFromMode(value.mode),
         country,
-        is_principal: true,
-        ...(file_path ? { file_path } : {}),
+        existingId: resumeId,
+      })
+      if (!fileSaved) {
+        // o texto já foi lido; segue sem o arquivo original
+        toast.warning('Guardamos o texto, mas não o arquivo PDF.', { description: 'Você pode enviar o PDF de novo depois.' })
       }
-
-      const query = resumeId
-        ? supabase.from('resumes').update(row).eq('id', resumeId).select('id').single()
-        : supabase.from('resumes').insert(row).select('id').single()
-      const { data, error: dbErr } = await query
-      if (dbErr) throw dbErr
-
       toast.success('Currículo guardado!')
-      onSaved(data.id as string)
+      onSaved(id)
     } catch (err) {
       toast.error(friendlyDataError(err, 'Não conseguimos guardar seu currículo.'))
     } finally {

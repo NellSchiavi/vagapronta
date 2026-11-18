@@ -1,23 +1,7 @@
-import { FileText, KanbanSquare, PenLine, Search, Sparkles } from 'lucide-react'
+import { KanbanSquare, PenLine, Search, Sparkles } from 'lucide-react'
 import { AdaptLettersSwitch, ComingSoonPage } from './PlaceholderPage'
 
 /* Telas ainda em construção. Cada uma é trocada pela tela real na sua etapa. */
-
-export function ResumeComingSoon() {
-  return (
-    <ComingSoonPage
-      title="Currículo"
-      description="Sua nota, sugestões de melhoria e as versões do seu currículo."
-      icon={FileText}
-      promise="Aqui você vai descobrir a nota do seu currículo e o que melhorar."
-      features={[
-        'Nota de 0 a 100 e se ele passa nos filtros das empresas',
-        'Dicas por parte do currículo, aplicadas com um toque',
-        'A evolução da sua nota ao longo do tempo',
-      ]}
-    />
-  )
-}
 
 export function AdaptComingSoon() {
   return (

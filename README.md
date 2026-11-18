@@ -42,6 +42,21 @@ Comandos úteis:
 
 O login com LinkedIn só funciona depois de configurado (seção 4). Até lá, use "Entrar com e-mail".
 
+### IA no ambiente local
+
+As ações de IA (organizar e analisar o currículo, adaptar à vaga, cartas) rodam nas **Edge Functions** do Supabase, em `supabase/functions/`. Os secrets locais ficam em `supabase/functions/.env`. Esse arquivo não vai para o git, e o modelo dele é `supabase/functions/.env.example`.
+
+- **Sem chave (modo de exemplo):** `AI_PROVIDER=mock`. As funções devolvem respostas de exemplo depois de um segundo. Serve para testar as telas sem gastar a cota.
+- **Com a IA de verdade:** crie a chave grátis do Gemini (veja a seção 6) e use:
+  ```
+  AI_PROVIDER=gemini
+  GEMINI_API_KEY=sua-chave
+  ```
+
+Depois de mudar o `.env` ou criar uma função nova, reinicie: `npx supabase stop` e `npx supabase start`. Mudanças no código de uma função que já existe recarregam sozinhas.
+
+Cada pessoa pode usar a IA até `AI_DAILY_LIMIT` vezes por dia (padrão: 40). Depois disso, o app mostra um aviso amigável e libera de novo no dia seguinte.
+
 ### Dados de exemplo (seed)
 
 O arquivo `supabase/seed.sql` cria dois usuários com as telas já preenchidas (vagas, candidaturas, notas e cartas):
@@ -198,7 +213,18 @@ Os dois modelos usam `{{ .ConfirmationURL }}` (o link) e `{{ .Token }}` (o códi
 
 ## 5. Banco de dados na nuvem (em construção)
 
-## 6. Chaves do Gemini e da Adzuna (em construção)
+## 6. Chaves do Gemini e da Adzuna
+
+### 6.1 Gemini (IA)
+
+1. Acesse https://aistudio.google.com/apikey e entre com uma conta Google.
+2. Clique em **Create API key** (ou "Criar chave de API") e copie a chave.
+3. **Local:** cole em `supabase/functions/.env` (`GEMINI_API_KEY=...` e `AI_PROVIDER=gemini`) e reinicie o Supabase local.
+4. **Nuvem:** (em construção, junto com o deploy das funções)
+
+O nível gratuito do Gemini tem limite de pedidos por dia. O limite por pessoa (`AI_DAILY_LIMIT`) existe para que vocês dois juntos não passem dele.
+
+### 6.2 Adzuna (vagas) (em construção)
 
 ## 7. Funções e busca diária de vagas (em construção)
 
