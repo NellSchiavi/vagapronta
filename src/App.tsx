@@ -13,8 +13,8 @@ import { AdaptPage } from '@/pages/adapt/AdaptPage'
 import {
   ApplicationsComingSoon,
   JobsComingSoon,
-  LettersComingSoon,
 } from '@/pages/coming-soon'
+import { LettersPage } from '@/pages/letters/LettersPage'
 import { ResumePage } from '@/pages/resume/ResumePage'
 import { LoginPage } from '@/pages/login/LoginPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
@@ -43,7 +43,7 @@ export function App() {
                         <Route path="/" element={<HomePage />} />
                         <Route path="/curriculo" element={<ResumePage />} />
                         <Route path="/adaptar" element={<AdaptPage />} />
-                        <Route path="/cartas" element={<LettersComingSoon />} />
+                        <Route path="/cartas" element={<LettersPage />} />
                         <Route path="/vagas" element={<JobsComingSoon />} />
                         <Route path="/candidaturas" element={<ApplicationsComingSoon />} />
                       </Route>

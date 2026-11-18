@@ -121,6 +121,14 @@ export function startAiTask<T, M = unknown>(opts: StartOptions<T, M>) {
     .finally(() => window.clearTimeout(slowTimer))
 }
 
+/** Atualiza o resultado guardado (ex.: a pessoa editou a carta antes de salvar) */
+export function updateAiTaskResult<T>(key: string, update: (prev: T) => T) {
+  const t = tasks.get(key) as AiTask<T> | undefined
+  if (!t || t.status !== 'done' || t.result === undefined) return
+  tasks.set(key, { ...t, result: update(t.result) } as AiTask)
+  emit()
+}
+
 export function clearAiTask(key: string) {
   runIds.set(key, (runIds.get(key) ?? 0) + 1) // ignora respostas atrasadas
   tasks.delete(key)

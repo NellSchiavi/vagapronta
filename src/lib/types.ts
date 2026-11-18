@@ -55,6 +55,21 @@ export type ResumeAnalysis = Omit<Row<'resume_analyses'>, 'scores' | 'suggestion
 
 export type AiUsage = Row<'ai_usage'>
 
+/** Carta gerada pela IA (ainda não salva) */
+export interface GeneratedLetter {
+  titulo: string
+  carta: string
+  tone: LetterTone
+  job_id: string | null
+  job_text: string | null
+}
+
+export const TONE_HELP: Record<LetterTone, string> = {
+  formal: 'Respeitoso e objetivo. Bom para bancos, indústria e órgãos públicos.',
+  caloroso: 'Próximo e entusiasmado, sem exageros. Bom para varejo, saúde e educação.',
+  direto: 'Frases curtas, vai direto às qualificações.',
+}
+
 /** Uma mudança proposta pela adaptação à vaga (mesmo formato aplicável das sugestões) */
 export interface AdaptChange {
   secao: ResumeSection

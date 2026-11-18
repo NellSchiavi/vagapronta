@@ -1,22 +1,7 @@
-import { KanbanSquare, PenLine, Search } from 'lucide-react'
-import { AdaptLettersSwitch, ComingSoonPage } from './PlaceholderPage'
+import { KanbanSquare, Search } from 'lucide-react'
+import { ComingSoonPage } from './PlaceholderPage'
 
 /* Telas ainda em construção. Cada uma é trocada pela tela real na sua etapa. */
-
-export function LettersComingSoon() {
-  return (
-    <>
-      <AdaptLettersSwitch current="cartas" />
-      <ComingSoonPage
-        title="Cartas de apresentação"
-        description="Cartas feitas para cada vaga, no tom que você preferir."
-        icon={PenLine}
-        promise="Aqui você vai criar cartas de apresentação para cada vaga."
-        features={['Tom formal, caloroso ou direto', 'Edite o texto direto na tela', 'Baixe em PDF para enviar']}
-      />
-    </>
-  )
-}
 
 export function JobsComingSoon() {
   return (
