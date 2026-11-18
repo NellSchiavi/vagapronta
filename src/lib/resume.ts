@@ -8,7 +8,8 @@ export interface Experience {
   empresa: string
   local?: string
   inicio?: string
-  fim?: string
+  /** null = emprego atual */
+  fim?: string | null
   descricao?: string
 }
 
@@ -16,7 +17,7 @@ export interface Education {
   curso: string
   instituicao: string
   inicio?: string
-  fim?: string
+  fim?: string | null
 }
 
 export interface ResumeSections {

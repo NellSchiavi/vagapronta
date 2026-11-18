@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import type { CountryCode } from '@/lib/countries'
+import type { Json } from '@/lib/database.types'
 
 export interface Profile {
   user_id: string
@@ -12,7 +13,7 @@ export interface Profile {
   desired_role: string | null
   city: string | null
   resume_country: CountryCode
-  preferences: Record<string, unknown>
+  preferences: NonNullable<Json>
   onboarded_at: string | null
   created_at: string
   updated_at: string

@@ -14,7 +14,7 @@ import {
 import type { CountryCode } from '@/lib/countries'
 import { friendlyDataError } from '@/lib/errors'
 import type { ResumeContent } from '@/lib/resume'
-import { supabase } from '@/lib/supabase'
+import { asJson, supabase } from '@/lib/supabase'
 
 interface Props {
   userId: string
@@ -69,7 +69,7 @@ export function ResumeStep({ userId, greeting, country, resume, resumeId, onChan
       const content: ResumeContent = { raw_text: value.text.trim(), sections: null }
       const row = {
         title: 'Currículo principal',
-        content,
+        content: asJson(content),
         source: sourceFromMode(value.mode),
         country,
         is_principal: true,

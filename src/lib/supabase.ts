@@ -1,11 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Database, Json } from '@/lib/database.types'
+
+/** Converte um objeto tipado do app para o tipo JSON das colunas jsonb */
+export const asJson = <T>(value: T) => value as unknown as NonNullable<Json>
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const isSupabaseConfigured = Boolean(url && anonKey && !anonKey.startsWith('cole-aqui'))
 
-export const supabase = createClient(url || 'http://127.0.0.1:54321', anonKey || 'chave-ausente', {
+export const supabase = createClient<Database>(url || 'http://127.0.0.1:54321', anonKey || 'chave-ausente', {
   auth: {
     // PKCE: o retorno do login vem como ?code=..., que convive bem com o HashRouter (#/rota)
     flowType: 'pkce',

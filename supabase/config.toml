@@ -255,8 +255,8 @@ subject = "Seu link de acesso ao VagaPronta"
 content_path = "./supabase/templates/magic_link.html"
 
 [auth.email.template.confirmation]
-subject = "Seu link de acesso ao VagaPronta"
-content_path = "./supabase/templates/magic_link.html"
+subject = "Confirme seu e-mail no VagaPronta"
+content_path = "./supabase/templates/confirm_signup.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

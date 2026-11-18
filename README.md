@@ -2,18 +2,24 @@
 
 App pessoal de busca de emprego: analise o currículo, adapte para cada vaga, gere cartas de apresentação e acompanhe as candidaturas num só lugar.
 
-> O passo a passo completo de configuração (Supabase, LinkedIn, Gemini, Adzuna e GitHub Pages) será adicionado aqui ao longo do desenvolvimento.
+- **Frontend:** React + Vite + TypeScript + Tailwind, publicado no GitHub Pages.
+- **Backend:** Supabase (login, banco Postgres, arquivos e funções), no plano gratuito.
+- **IA:** Google Gemini, chamado só pelas funções do Supabase. A chave nunca vai para o navegador.
 
-## Rodar localmente
+> Algumas seções abaixo ainda estão marcadas como **(em construção)**. Elas serão completadas ao longo do desenvolvimento.
 
-Pré-requisitos: [Node.js](https://nodejs.org/) 20 ou mais recente e o [Docker Desktop](https://www.docker.com/products/docker-desktop/) aberto.
+---
+
+## 1. Rodar no seu computador
+
+Pré-requisitos: [Node.js](https://nodejs.org/) 20 ou mais recente e o [Docker Desktop](https://www.docker.com/products/docker-desktop/) **aberto**.
 
 ```bash
 npm install
 npx supabase start      # sobe o Supabase local (a 1ª vez baixa as imagens e demora)
 ```
 
-No fim, o comando mostra a **API URL** e a **anon key** (ou "Publishable key").
+No fim, o comando mostra a **API URL** e a **Publishable key** (ou "anon key").
 Copie `.env.example` para `.env.local` e cole esses dois valores. Depois:
 
 ```bash
@@ -22,21 +28,158 @@ npm run dev
 
 Abra http://localhost:5173 no navegador.
 
-- **E-mails de acesso (magic link):** no ambiente local, nenhum e-mail sai de verdade. Eles aparecem em http://127.0.0.1:54324.
-- **Painel do banco local (Studio):** http://127.0.0.1:54323
-- **Recriar o banco do zero** (roda as migrations e o seed de novo): `npx supabase db reset`
-- **Desligar:** `npx supabase stop`
+| O quê | Onde |
+| --- | --- |
+| App | http://localhost:5173 |
+| E-mails de acesso (nenhum e-mail sai de verdade no ambiente local) | http://127.0.0.1:54324 |
+| Painel do banco local (Studio) | http://127.0.0.1:54323 |
 
-O login com LinkedIn só funciona depois de configurado (veja a seção do LinkedIn, mais abaixo). Até lá, use "Entrar com e-mail".
+Comandos úteis:
 
-## Estrutura
+- `npx supabase db reset`: recria o banco do zero (migrations e dados de exemplo).
+- `npx supabase stop`: desliga o Supabase local.
+- `npm run db:types`: atualiza os tipos TypeScript depois de mudar o banco.
+
+O login com LinkedIn só funciona depois de configurado (seção 4). Até lá, use "Entrar com e-mail".
+
+### Dados de exemplo (seed)
+
+O arquivo `supabase/seed.sql` cria dois usuários com as telas já preenchidas (vagas, candidaturas, notas e cartas):
+
+| Usuário | E-mail | Perfil |
+| --- | --- | --- |
+| Nelson | `nelson@exemplo.com` | Desenvolvedor front-end |
+| Esposa | `esposa@exemplo.com` | Analista de RH |
+
+Para entrar com um deles, clique em **Entrar com e-mail**, digite o e-mail acima e abra a mensagem em http://127.0.0.1:54324 (clique no botão ou digite o código).
+
+O seed **só existe no ambiente local**. Ele roda no primeiro `npx supabase start` e a cada `npx supabase db reset`, e **não é enviado** ao projeto na nuvem pelo `supabase db push`.
+
+**Como apagar os dados de exemplo:**
+
+- **Só os dois usuários de exemplo, mantendo os seus:** abra o Studio (http://127.0.0.1:54323) → **SQL Editor**, cole o conteúdo de `supabase/apagar_seed.sql` e clique em **Run**. Isso apaga os dois e tudo o que é deles.
+- **Recomeçar com o banco vazio, sem nenhum dado de exemplo:** em `supabase/config.toml`, mude `[db.seed]` → `enabled = false` e rode `npx supabase db reset`. Para voltar a ter os exemplos, mude de novo para `true` e rode o reset.
+
+---
+
+## 2. Criar o projeto no Supabase (em construção)
+
+## 3. Login por e-mail na nuvem
+
+### 3.1 URLs do app (obrigatório)
+
+No painel do Supabase: **Authentication → URL Configuration**
+
+- **Site URL:** `https://nellschiavi.github.io/vagapronta/`
+- **Redirect URLs** (botão "Add URL"), adicione as duas:
+  - `https://nellschiavi.github.io/vagapronta/`
+  - `http://localhost:5173/`
+
+Sem isso, o link do e-mail e o retorno do LinkedIn mandam a pessoa para o endereço errado.
+
+### 3.2 E-mail próprio (SMTP), muito recomendado
+
+O envio de e-mails que vem com o Supabase é só para testes. Ele manda **poucos e-mails por hora** e pode **não entregar para endereços de fora da organização** do projeto, ou seja, sua esposa pode não receber o link. Configure um SMTP próprio em **Authentication → SMTP Settings** → ative **Enable Custom SMTP**.
+
+#### Opção A: Gmail com senha de app (mais simples, sem domínio próprio)
+
+1. Use uma conta Gmail. Pode ser uma criada só para o app, como `vagapronta.app@gmail.com`.
+2. Ative a **verificação em duas etapas** em https://myaccount.google.com/security. Ela é obrigatória para a próxima etapa.
+3. Abra https://myaccount.google.com/apppasswords, crie uma senha com o nome "VagaPronta" e **copie os 16 caracteres** (sem os espaços).
+4. No Supabase (SMTP Settings), preencha:
+
+   | Campo | Valor |
+   | --- | --- |
+   | Sender email | o seu Gmail (o mesmo do usuário) |
+   | Sender name | `VagaPronta` |
+   | Host | `smtp.gmail.com` |
+   | Port number | `465` |
+   | Username | o seu Gmail completo |
+   | Password | a senha de app de 16 caracteres |
+
+5. Clique em **Save**. O Gmail aceita cerca de 500 e-mails por dia, bem mais do que o app precisa.
+
+#### Opção B: Resend (plano grátis, exige um domínio seu)
+
+O Resend é um serviço de e-mail com plano grátis de 3.000 e-mails por mês. **Atenção:** para enviar a outras pessoas, ele exige que você tenha um **domínio próprio** (por exemplo, `seusite.com.br`). Sem domínio, ele só envia para o seu próprio e-mail. Nesse caso, use a opção A.
+
+1. Crie a conta em https://resend.com.
+2. Vá em **Domains → Add Domain**, digite seu domínio e copie os registros DNS que ele mostra (TXT e MX) para o painel onde o domínio foi comprado (Registro.br, Hostinger…). Espere o status ficar **Verified**.
+3. Vá em **API Keys → Create API Key**, com a permissão **Sending access**, e copie a chave (começa com `re_`).
+4. No Supabase (SMTP Settings):
+
+   | Campo | Valor |
+   | --- | --- |
+   | Sender email | `nao-responda@seudominio.com.br` |
+   | Sender name | `VagaPronta` |
+   | Host | `smtp.resend.com` |
+   | Port number | `465` |
+   | Username | `resend` |
+   | Password | a chave `re_...` |
+
+5. Clique em **Save**.
+
+Depois de configurar o SMTP, confira em **Authentication → Rate Limits** se "Rate limit for sending emails" está em pelo menos 30 por hora.
+
+### 3.3 Textos dos e-mails (link e código)
+
+O app aceita tanto o **link** quanto o **código de 6 dígitos** do e-mail, que é útil quando a pessoa pede o acesso no computador e abre o e-mail no celular. Os modelos padrão do Supabase estão em inglês e não trazem o código. Para trocá-los:
+
+1. No painel: **Authentication → Emails → Templates**.
+2. **Magic Link:**
+   - Subject: `Seu link de acesso ao VagaPronta`
+   - Body (aba "Source"): apague tudo e cole o conteúdo de [`supabase/templates/magic_link.html`](supabase/templates/magic_link.html).
+3. **Confirm signup:**
+   - Subject: `Confirme seu e-mail no VagaPronta`
+   - Body: cole o conteúdo de [`supabase/templates/confirm_signup.html`](supabase/templates/confirm_signup.html).
+4. Clique em **Save** em cada um.
+
+Os dois modelos usam `{{ .ConfirmationURL }}` (o link) e `{{ .Token }}` (o código). No ambiente local, eles já são aplicados automaticamente pelo `supabase/config.toml`.
+
+## 4. Login com LinkedIn (em construção)
+
+## 5. Banco de dados na nuvem (em construção)
+
+## 6. Chaves do Gemini e da Adzuna (em construção)
+
+## 7. Funções e busca diária de vagas (em construção)
+
+## 8. Publicar no GitHub Pages (em construção)
+
+---
+
+## Banco de dados
+
+Todas as tabelas têm `user_id`, `created_at`, `updated_at` e **RLS**: cada pessoa só vê e altera os próprios dados.
+
+| Tabela | Para quê |
+| --- | --- |
+| `profiles` | nome, foto, cargo desejado, cidade, país do currículo e preferências |
+| `resumes` | currículos e versões (a versão adaptada aponta para a vaga em `job_id`) |
+| `resume_analyses` | histórico das análises: nota geral, notas por critério e sugestões |
+| `jobs` | vagas sugeridas (Adzuna, Remotive) ou cadastradas à mão |
+| `cover_letters` | cartas de apresentação |
+| `applications` | candidaturas do kanban |
+| `ai_usage` | quantas vezes cada pessoa usou a IA no dia (limite da cota gratuita) |
+
+PDFs ficam no bucket privado `curriculos`, numa pasta com o id de cada pessoa, e são acessados por URL assinada.
+
+As migrations estão em `supabase/migrations/`.
+
+## Estrutura do código
 
 ```
 src/
   components/
-    ui/        componentes base (botão, campo, cartão, tooltip, toasts…)
-    brand/     componentes da identidade (logo, rodapé, anel de nota, pílulas…)
-  lib/         utilitários e tema claro/escuro
+    ui/        componentes base (botão, campo, cartão, abas, tooltip, toasts…)
+    brand/     identidade visual (logo, rodapé, anel de nota, pílulas…)
+    resume/    envio de currículo (PDF, texto, LinkedIn)
+  lib/         Supabase, login, perfil, tipos, leitura de PDF, tema
   pages/       telas
+  routes/      proteção das rotas (login e onboarding)
   styles/      tokens do design system (cores, fontes, raios)
+supabase/
+  migrations/  estrutura do banco
+  templates/   e-mails de acesso
+  seed.sql     dados de exemplo (só local)
 ```
