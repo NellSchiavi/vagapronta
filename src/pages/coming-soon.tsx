@@ -1,4 +1,4 @@
-import { KanbanSquare, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { ComingSoonPage } from './PlaceholderPage'
 
 /* Telas ainda em construção. Cada uma é trocada pela tela real na sua etapa. */
@@ -19,18 +19,3 @@ export function JobsComingSoon() {
   )
 }
 
-export function ApplicationsComingSoon() {
-  return (
-    <ComingSoonPage
-      title="Candidaturas"
-      description="Acompanhe cada candidatura, da preparação até a oferta."
-      icon={KanbanSquare}
-      promise="Aqui você vai acompanhar todas as suas candidaturas num só quadro."
-      features={[
-        'Da preparação até a oferta, em colunas',
-        'Anotações e o currículo e a carta usados em cada uma',
-        'Lembretes para dar retorno às empresas',
-      ]}
-    />
-  )
-}

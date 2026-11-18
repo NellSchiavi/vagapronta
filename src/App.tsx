@@ -10,10 +10,8 @@ import { PublicOnly, RequireAuth, RequireOnboarded } from '@/routes/guards'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { HomePage } from '@/pages/home/HomePage'
 import { AdaptPage } from '@/pages/adapt/AdaptPage'
-import {
-  ApplicationsComingSoon,
-  JobsComingSoon,
-} from '@/pages/coming-soon'
+import { ApplicationsPage } from '@/pages/applications/ApplicationsPage'
+import { JobsComingSoon } from '@/pages/coming-soon'
 import { LettersPage } from '@/pages/letters/LettersPage'
 import { ResumePage } from '@/pages/resume/ResumePage'
 import { LoginPage } from '@/pages/login/LoginPage'
@@ -45,7 +43,7 @@ export function App() {
                         <Route path="/adaptar" element={<AdaptPage />} />
                         <Route path="/cartas" element={<LettersPage />} />
                         <Route path="/vagas" element={<JobsComingSoon />} />
-                        <Route path="/candidaturas" element={<ApplicationsComingSoon />} />
+                        <Route path="/candidaturas" element={<ApplicationsPage />} />
                       </Route>
                     </Route>
                   </Route>

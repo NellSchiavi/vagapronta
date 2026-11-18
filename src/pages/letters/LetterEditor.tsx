@@ -12,6 +12,7 @@ import { friendlyDataError } from '@/lib/errors'
 import { hasGaps } from '@/lib/gaps'
 import { generateLetter, restoreLetter, useDeleteLetter, useLetter, useUpdateLetter, type LetterRow } from '@/lib/queries/letters'
 import { TONE_LABEL, type GeneratedLetter, type LetterTone } from '@/lib/types'
+import { AddToApplicationsButton } from '@/pages/applications/AddToApplicationsButton'
 import { LetterGapsNotice, LetterSheet, pdfData, ToneSelector, useSender } from './letter-parts'
 
 const REDO_STEPS = ['Relendo a vaga…', 'Escolhendo outras experiências…', 'Escrevendo a nova versão…']
@@ -181,9 +182,19 @@ function Editor({ letter }: { letter: LetterRow }) {
         <Button variant="ghost" onClick={del} loading={remove.isPending} className="text-danger hover:text-danger">
           {!remove.isPending && <Trash2 aria-hidden />} Excluir carta
         </Button>
-        <Button size="lg" onClick={download} loading={downloading} disabled={hasGaps(text)}>
-          {!downloading && <Download aria-hidden />} Baixar PDF
-        </Button>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          <AddToApplicationsButton
+            variant="secondary"
+            size="lg"
+            jobId={letter.job_id}
+            letterId={letter.id}
+            resumeId={letter.resume_id}
+            fallback={{ role: letter.title.split(' — ')[0], company: letter.title.split(' — ')[1] }}
+          />
+          <Button size="lg" onClick={download} loading={downloading} disabled={hasGaps(text)}>
+            {!downloading && <Download aria-hidden />} Baixar PDF
+          </Button>
+        </div>
       </div>
       {hasGaps(text) && <p className="text-right text-[13px] text-warn">Complete as lacunas para baixar o PDF.</p>}
     </div>

@@ -3,6 +3,7 @@ import { CheckCircle2, FileText, PenLine, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import type { SavedAdaptation } from '@/lib/queries/adapt'
+import { AddToApplicationsButton } from '@/pages/applications/AddToApplicationsButton'
 
 export function AdaptSaved({ saved, onAnother }: { saved: SavedAdaptation; onAnother: () => void }) {
   return (
@@ -21,14 +22,15 @@ export function AdaptSaved({ saved, onAnother }: { saved: SavedAdaptation; onAno
       )}
       <p className="mt-4 text-sm font-medium">E agora?</p>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <Button asChild>
-          <Link to={`/curriculo?id=${saved.resumeId}`}>
-            <FileText aria-hidden /> Ver a nova versão
-          </Link>
-        </Button>
+        <AddToApplicationsButton jobId={saved.jobId} resumeId={saved.resumeId} />
         <Button asChild variant="secondary">
           <Link to={`/cartas?vaga=${saved.jobId}`}>
             <PenLine className="text-terra" aria-hidden /> Criar carta para esta vaga
+          </Link>
+        </Button>
+        <Button asChild variant="secondary">
+          <Link to={`/curriculo?id=${saved.resumeId}`}>
+            <FileText className="text-terra" aria-hidden /> Ver a nova versão
           </Link>
         </Button>
         <Button variant="ghost" onClick={onAnother}>
