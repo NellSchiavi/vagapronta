@@ -8,8 +8,8 @@ import { ThemeProvider } from '@/lib/theme'
 import { PublicOnly, RequireAuth, RequireOnboarded } from '@/routes/guards'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { HomePage } from '@/pages/home/HomePage'
+import { AdaptPage } from '@/pages/adapt/AdaptPage'
 import {
-  AdaptComingSoon,
   ApplicationsComingSoon,
   JobsComingSoon,
   LettersComingSoon,
@@ -46,7 +46,7 @@ export function App() {
                       <Route element={<AppLayout />}>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/curriculo" element={<ResumePage />} />
-                        <Route path="/adaptar" element={<AdaptComingSoon />} />
+                        <Route path="/adaptar" element={<AdaptPage />} />
                         <Route path="/cartas" element={<LettersComingSoon />} />
                         <Route path="/vagas" element={<JobsComingSoon />} />
                         <Route path="/candidaturas" element={<ApplicationsComingSoon />} />

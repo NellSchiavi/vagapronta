@@ -63,7 +63,7 @@ class GeminiProvider implements AiProvider {
 
   async completeJson(system: string, prompt: string, temperature: number) {
     // prazo total: as Edge Functions têm limite de tempo por chamada
-    const deadline = Date.now() + 100_000
+    const deadline = Date.now() + 110_000
     let last: HttpError | undefined
     for (const model of this.models) {
       if (Date.now() > deadline - 5_000) break
@@ -98,12 +98,29 @@ class GeminiProvider implements AiProvider {
         throw new HttpError(503, 'A IA está muito procurada agora. Tente de novo em alguns minutos.', 'ia_sobrecarregada')
       }
       try {
-        res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
-          body,
-          signal: AbortSignal.timeout(Math.min(60_000, remaining)),
+        // cronômetro próprio: uma consulta de DNS travada não respeita o AbortSignal do fetch
+        const limitMs = Math.min(45_000, remaining)
+        const controller = new AbortController()
+        let timer: number | undefined
+        const timeout = new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            controller.abort()
+            reject(new Error(`sem resposta em ${Math.round(limitMs / 1000)}s`))
+          }, limitMs)
         })
+        try {
+          res = await Promise.race([
+            fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
+              body,
+              signal: controller.signal,
+            }),
+            timeout,
+          ])
+        } finally {
+          clearTimeout(timer)
+        }
         if (res.status !== 500 && res.status !== 503) break
         console.warn(`[gemini] ${model} respondeu ${res.status} (tentativa ${attempt}/${ATTEMPTS})`)
         if (attempt === ATTEMPTS) {

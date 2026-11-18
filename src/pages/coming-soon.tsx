@@ -1,26 +1,7 @@
-import { KanbanSquare, PenLine, Search, Sparkles } from 'lucide-react'
+import { KanbanSquare, PenLine, Search } from 'lucide-react'
 import { AdaptLettersSwitch, ComingSoonPage } from './PlaceholderPage'
 
 /* Telas ainda em construção. Cada uma é trocada pela tela real na sua etapa. */
-
-export function AdaptComingSoon() {
-  return (
-    <>
-      <AdaptLettersSwitch current="adaptar" />
-      <ComingSoonPage
-        title="Adaptar à vaga"
-        description="Deixe seu currículo com a cara de cada vaga."
-        icon={Sparkles}
-        promise="Aqui você vai adaptar seu currículo para cada vaga que quiser."
-        features={[
-          'Cole o anúncio ou o link da vaga',
-          'Veja a compatibilidade antes e depois',
-          'Escolha quais mudanças aceitar',
-        ]}
-      />
-    </>
-  )
-}
 
 export function LettersComingSoon() {
   return (

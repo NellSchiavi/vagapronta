@@ -55,6 +55,29 @@ export type ResumeAnalysis = Omit<Row<'resume_analyses'>, 'scores' | 'suggestion
 
 export type AiUsage = Row<'ai_usage'>
 
+/** Uma mudança proposta pela adaptação à vaga (mesmo formato aplicável das sugestões) */
+export interface AdaptChange {
+  secao: ResumeSection
+  titulo: string
+  motivo: string
+  antes: string
+  depois: string
+  /** pontos percentuais de compatibilidade que a mudança acrescenta */
+  impacto: number
+}
+
+/** Resultado da função adaptar-vaga (nada é salvo até a pessoa confirmar) */
+export interface Adaptation {
+  vaga: { titulo: string; empresa?: string; local?: string; modalidade?: WorkMode | null; resumo: string }
+  compat_antes: number
+  compat_depois: number
+  palavras_chave: string[]
+  mudancas: AdaptChange[]
+  vaga_texto: string
+  vaga_url: string | null
+  job_id: string | null
+}
+
 export const WORK_MODE_LABEL: Record<WorkMode, string> = {
   presencial: 'Presencial',
   hibrido: 'Híbrido',
