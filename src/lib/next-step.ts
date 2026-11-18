@@ -29,6 +29,8 @@ export type NextStepKind = 'upload' | 'improve' | 'analyze' | 'follow-up' | 'ada
 export interface NextStep {
   kind: NextStepKind
   title: string
+  /** rótulo curto acima da descrição, ex.: "Natura · 91% compatível" */
+  meta?: string
   description: string
   action: { label: string; to: string }
 }
@@ -83,11 +85,11 @@ export function computeNextStep(input: NextStepInput): NextStep {
     .filter((j) => (j.compatibility ?? 0) > HIGH_MATCH && !input.handledJobIds.has(j.id))
     .sort((a, b) => (b.compatibility ?? 0) - (a.compatibility ?? 0))[0]
   if (best) {
-    const where = best.company ? `Vaga na empresa ${best.company}, com` : 'Essa vaga tem'
     return {
       kind: 'adapt',
       title: `Adapte seu currículo para ${best.title}`,
-      description: `${where} ${best.compatibility}% de compatibilidade com você. Adaptar o currículo aumenta suas chances.`,
+      meta: [best.company, `${best.compatibility}% compatível`].filter(Boolean).join(' · '),
+      description: 'Uma vaga que combina muito com você. Ajustar o currículo para ela aumenta suas chances.',
       action: { label: 'Adaptar', to: `/adaptar?vaga=${best.id}` },
     }
   }

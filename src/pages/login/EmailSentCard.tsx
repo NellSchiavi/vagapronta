@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { friendlyAuthError } from '@/lib/errors'
-import { supabase } from '@/lib/supabase'
+import { isLocalSupabase, localMailUrl, supabase } from '@/lib/supabase'
 import { sendMagicLink } from './EmailLoginForm'
 
 const RESEND_SECONDS = 60
-const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname)
 
 export function EmailSentCard({ email, onChangeEmail }: { email: string; onChangeEmail: () => void }) {
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS)
@@ -67,13 +66,13 @@ export function EmailSentCard({ email, onChangeEmail }: { email: string; onChang
           e toque em <span className="font-medium">“Entrar no VagaPronta”</span>.
         </p>
         <p className="mt-2 text-sm text-muted">Não chegou? Olhe também a caixa de spam ou promoções.</p>
-        {isLocal && (
+        {isLocalSupabase && (
           <p className="mt-2 text-sm text-muted">
-            Ambiente local: os e-mails chegam em{' '}
-            <a href="http://127.0.0.1:54324" target="_blank" rel="noopener noreferrer" className="underline underline-offset-[3px]">
-              127.0.0.1:54324
+            Ambiente de teste: os e-mails chegam em{' '}
+            <a href={localMailUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-[3px]">
+              {localMailUrl.replace('http://', '')}
             </a>
-            .
+            . Use o código, o link do e-mail só funciona no computador.
           </p>
         )}
       </div>

@@ -60,6 +60,64 @@ O seed **só existe no ambiente local**. Ele roda no primeiro `npx supabase star
 - **Só os dois usuários de exemplo, mantendo os seus:** abra o Studio (http://127.0.0.1:54323) → **SQL Editor**, cole o conteúdo de `supabase/apagar_seed.sql` e clique em **Run**. Isso apaga os dois e tudo o que é deles.
 - **Recomeçar com o banco vazio, sem nenhum dado de exemplo:** em `supabase/config.toml`, mude `[db.seed]` → `enabled = false` e rode `npx supabase db reset`. Para voltar a ter os exemplos, mude de novo para `true` e rode o reset.
 
+### Testar no celular (Wi-Fi de casa)
+
+Dá para abrir o app que está rodando no seu computador pelo celular, desde que os dois estejam **no mesmo Wi-Fi**.
+
+**1. Deixe o Wi-Fi de casa como rede "Privada" no Windows (só uma vez)**
+
+O Windows bloqueia conexões vindas de redes "Públicas". Para conferir:
+**Configurações → Rede e Internet → Wi-Fi → (nome da sua rede) → Tipo de perfil de rede → Rede privada.**
+Faça isso **só para o Wi-Fi de casa**, nunca para Wi-Fi de café, hotel ou aeroporto.
+
+**2. Confira o `.env.local`**
+
+Ele precisa ter esta linha (já está no `.env.example`):
+
+```
+VITE_SUPABASE_URL_REDE=auto
+```
+
+Com ela, quando o app é aberto pelo IP do PC, ele fala com o Supabase por esse mesmo IP, e não pelo `127.0.0.1` (que, no celular, seria o próprio celular). No PC, em `localhost`, nada muda.
+
+**3. Suba o app aberto para a rede**
+
+Feche o `npm run dev`, se estiver aberto, e rode:
+
+```bash
+npm run dev:rede
+```
+
+O terminal mostra um quadro como este:
+
+```
+📱 Abra no celular:        http://192.168.15.162:5173
+✉️  Códigos de acesso (PC): http://192.168.15.162:54324
+```
+
+**4. Permissão do Firewall do Windows**
+
+Na primeira vez, o Windows pode abrir a janela **"O Firewall do Windows Defender bloqueou alguns recursos deste aplicativo"** para o **Node.js** (o servidor do app) e, talvez, para o **Docker Desktop Backend** (Supabase e Mailpit).
+Em cada uma, marque **somente "Redes privadas"**, deixe **"Redes públicas" desmarcado** e clique em **Permitir acesso**.
+
+Se a janela não aparecer e o celular não abrir o app, veja em **Segurança do Windows → Firewall e proteção de rede → Permitir um aplicativo pelo firewall** se "Node.js JavaScript Runtime" e "Docker Desktop Backend" estão marcados na coluna **Privada**.
+Em computador da empresa, o firewall pode ser controlado pela TI. Nesse caso, a liberação talvez não seja possível.
+
+**5. Entrar no celular**
+
+1. No celular, abra o endereço "📱 Abra no celular".
+2. Toque em **Entrar com e-mail**, digite o e-mail e toque em **Enviar link de acesso**.
+3. No **computador**, abra o endereço "✉️ Códigos de acesso", clique no e-mail mais recente e veja o **código de 6 dígitos**.
+4. Digite o código no celular, no campo **"Abriu o e-mail em outro aparelho?"**.
+
+O **link** do e-mail não funciona no celular nesse modo de teste (ele aponta para o computador). Use sempre o código.
+
+**Problemas comuns**
+
+- **A página não abre no celular:** confira se o celular está no mesmo Wi-Fi (e não nos dados móveis), se a rede está como Privada e se o Firewall liberou o Node.js. Se o PC tiver VPN ligada, desligue-a.
+- **Abre, mas fica carregando ou diz "Sem conexão com o servidor":** o celular não está alcançando o Supabase (porta 54321). Libere o Docker Desktop Backend no Firewall (rede privada).
+- **O IP mudou:** o roteador às vezes troca o IP do PC. É só rodar `npm run dev:rede` de novo e usar o endereço novo.
+
 ---
 
 ## 2. Criar o projeto no Supabase (em construção)

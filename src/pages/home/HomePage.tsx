@@ -92,7 +92,10 @@ function NextStepCard({ step }: { step: NextStep }) {
         <h2 id="next-step-title" className="mt-0.5 text-[21px] leading-snug sm:text-[23px]">
           {step.title}
         </h2>
-        <p className="mt-1 text-[15px] text-ink/80">{step.description}</p>
+        {step.meta && (
+          <p className="mt-2 inline-flex rounded-full bg-card px-2.5 py-1 text-[13px] font-medium text-ink">{step.meta}</p>
+        )}
+        <p className="mt-1.5 text-[15px] text-ink/80">{step.description}</p>
       </div>
       <Button asChild size="lg" className="shrink-0">
         <Link to={step.action.to}>
