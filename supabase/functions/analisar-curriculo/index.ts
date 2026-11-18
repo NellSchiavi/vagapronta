@@ -11,7 +11,8 @@ import { requireUser } from '../_shared/auth.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import { redactPersonalData } from '../_shared/privacy.ts'
 import { consumeQuota } from '../_shared/quota.ts'
-import { clip, COUNTRY_RULES, resumeToText, type ResumeContent } from '../_shared/resume.ts'
+import { promptRules } from '../_shared/paises.ts'
+import { clip, resumeToText, type ResumeContent } from '../_shared/resume.ts'
 
 const score = z.coerce.number().transform((n) => Math.max(0, Math.min(100, Math.round(n))))
 
@@ -144,7 +145,7 @@ Deno.serve(
     const prompt = [
       `Cargo desejado: ${profile?.desired_role || 'não informado'}`,
       `Cidade: ${profile?.city || 'não informada'}`,
-      `País do currículo — ${COUNTRY_RULES[resume.country] ?? COUNTRY_RULES.BR}`,
+      `País do currículo — ${promptRules(resume.country)}`,
       '',
       'Currículo:',
       '"""',

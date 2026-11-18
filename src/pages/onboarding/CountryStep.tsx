@@ -1,18 +1,20 @@
-import { ArrowLeft, Check } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { CountryPicker } from '@/components/resume/country-picker'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { COUNTRIES, type CountryCode } from '@/lib/countries'
-import { cn } from '@/lib/utils'
+import type { CountryCode } from '@/lib/paises'
 
 interface Props {
   value: CountryCode
+  language: string | null
   onChange: (c: CountryCode) => void
+  onLanguageChange: (l: string) => void
   onBack: () => void
-  onFinish: (c: CountryCode) => void
+  onFinish: (c: CountryCode, language: string | null) => void
   saving: boolean
 }
 
-export function CountryStep({ value, onChange, onBack, onFinish, saving }: Props) {
+export function CountryStep({ value, language, onChange, onLanguageChange, onBack, onFinish, saving }: Props) {
   return (
     <Card className="p-5 sm:p-8">
       <h1 id="onboarding-title" className="text-[28px] leading-tight sm:text-[32px]">
@@ -22,55 +24,15 @@ export function CountryStep({ value, onChange, onBack, onFinish, saving }: Props
         Cada país tem costumes diferentes sobre foto, dados pessoais e tamanho. Você pode mudar isso depois.
       </p>
 
-      <fieldset className="mt-6">
-        <legend className="sr-only">País do currículo</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {COUNTRIES.map((c) => {
-            const checked = c.code === value
-            return (
-              <label
-                key={c.code}
-                className={cn(
-                  'relative flex cursor-pointer gap-3 rounded-card-sm border bg-card p-4 transition-colors',
-                  'focus-within:ring-2 focus-within:ring-terra/40',
-                  checked ? 'border-terra bg-terra-soft/50' : 'border-line-strong hover:border-terra/60',
-                )}
-              >
-                <input
-                  type="radio"
-                  name="country"
-                  value={c.code}
-                  checked={checked}
-                  onChange={() => onChange(c.code)}
-                  className="sr-only"
-                />
-                <span
-                  aria-hidden
-                  className={cn(
-                    'mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full border-2',
-                    checked ? 'border-terra-strong bg-terra-strong text-on-accent' : 'border-line-strong',
-                  )}
-                >
-                  {checked && <Check className="size-3" strokeWidth={3} />}
-                </span>
-                <span>
-                  <span className="flex items-center gap-2 font-medium">
-                    {c.name}
-                    {c.code === 'BR' && <span className="rounded-full bg-track px-2 py-0.5 text-xs text-muted">padrão</span>}
-                  </span>
-                  <span className="mt-0.5 block text-sm text-muted">{c.summary}</span>
-                </span>
-              </label>
-            )
-          })}
-        </div>
-      </fieldset>
+      <div className="mt-6">
+        <CountryPicker value={value} language={language} onChange={onChange} onLanguageChange={onLanguageChange} />
+      </div>
 
       <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="ghost" onClick={onBack} className="text-muted">
           <ArrowLeft aria-hidden /> Voltar
         </Button>
-        <Button size="lg" onClick={() => onFinish(value)} loading={saving}>
+        <Button size="lg" onClick={() => onFinish(value, language)} loading={saving}>
           Concluir
         </Button>
       </div>

@@ -64,13 +64,6 @@ export function resumeToText(content: ResumeContent): string {
   return lines.join('\n').trim()
 }
 
-export const COUNTRY_RULES: Record<string, string> = {
-  BR: 'Brasil: foto opcional (mais comum não colocar); evitar CPF, RG e estado civil; até 2 páginas; cidade e contato no topo.',
-  US: 'Estados Unidos: sem foto, idade, estado civil ou nacionalidade; 1 página; verbos de ação e resultados com números; em inglês.',
-  DE: 'Alemanha (Lebenslauf): foto profissional é comum; ordem cronológica inversa com datas mês/ano; até 2 páginas; em alemão ou inglês.',
-  CH: 'Suíça: foto, nacionalidade e permissão de trabalho costumam aparecer; até 2 páginas; idioma da região (alemão, francês ou italiano) ou inglês.',
-}
-
 /** Limita o tamanho do texto enviado para a IA */
 export function clip(text: string, max = 15000) {
   return text.length > max ? `${text.slice(0, max)}\n[…texto cortado…]` : text

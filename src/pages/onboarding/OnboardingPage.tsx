@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { LoadingCards } from '@/components/ui/skeleton'
 import { useAuth } from '@/lib/auth'
-import type { CountryCode } from '@/lib/countries'
+import { countryInfo, type CountryCode } from '@/lib/paises'
 import { friendlyDataError } from '@/lib/errors'
 import { useProfile, useUpdateProfile } from '@/lib/profile'
 import { supabase } from '@/lib/supabase'
@@ -26,6 +26,8 @@ export interface OnboardingDraft {
   about: AboutValues
   resume: { mode: InputMode; text: string }
   country: CountryCode
+  /** idioma escolhido para o currículo (ex.: "it") */
+  language?: string | null
   resumeId: string | null
 }
 
@@ -61,6 +63,7 @@ export function OnboardingPage() {
     },
     resume: { mode: 'pdf', text: '' },
     country: profile.resume_country ?? 'BR',
+    language: null,
     resumeId: null,
   }
 
@@ -94,6 +97,7 @@ function Wizard({ draftKey, initial }: { draftKey: string; initial: OnboardingDr
   const navigate = useNavigate()
   const { user } = useAuth()
   const updateProfile = useUpdateProfile()
+  const { data: profile } = useProfile()
   const [draft, setDraft] = useState<OnboardingDraft>(initial)
   const [direction, setDirection] = useState(1)
   const { savedAt, discard } = useAutosaveDraft(draftKey, draft)
@@ -115,12 +119,18 @@ function Wizard({ draftKey, initial }: { draftKey: string; initial: OnboardingDr
     }
   }
 
-  async function finish(country: CountryCode) {
+  async function finish(country: CountryCode, language: string | null) {
     try {
       if (draft.resumeId) {
         await supabase.from('resumes').update({ country }).eq('id', draft.resumeId)
       }
-      await updateProfile.mutateAsync({ resume_country: country, onboarded_at: new Date().toISOString() })
+      const resumeLanguage = language ?? countryInfo(country).languages[0].code
+      const prefs = profile?.preferences && typeof profile.preferences === 'object' && !Array.isArray(profile.preferences) ? profile.preferences : {}
+      await updateProfile.mutateAsync({
+        resume_country: country,
+        preferences: { ...prefs, resume_language: resumeLanguage },
+        onboarded_at: new Date().toISOString(),
+      })
       discard()
       toast.success('Tudo pronto!', { description: 'Seu espaço no VagaPronta está preparado.' })
       navigate('/', { replace: true })
@@ -182,7 +192,9 @@ function Wizard({ draftKey, initial }: { draftKey: string; initial: OnboardingDr
           {draft.step === 2 && (
             <CountryStep
               value={draft.country}
+              language={draft.language ?? null}
               onChange={(country) => patch({ country })}
+              onLanguageChange={(language) => patch({ language })}
               onBack={() => go(1)}
               onFinish={finish}
               saving={updateProfile.isPending}
