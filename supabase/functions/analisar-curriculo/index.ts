@@ -9,9 +9,10 @@ import { z } from 'npm:zod@3.24.1'
 import { generateJson } from '../_shared/ai.ts'
 import { requireUser } from '../_shared/auth.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
-import { redactPersonalData } from '../_shared/privacy.ts'
-import { consumeQuota } from '../_shared/quota.ts'
 import { promptRules } from '../_shared/paises.ts'
+import { redactPersonalData } from '../_shared/privacy.ts'
+import { ANALYZE_SYSTEM, guardInventedNumbers } from '../_shared/prompts.ts'
+import { consumeQuota } from '../_shared/quota.ts'
 import { clip, resumeToText, type ResumeContent } from '../_shared/resume.ts'
 
 const score = z.coerce.number().transform((n) => Math.max(0, Math.min(100, Math.round(n))))
@@ -34,49 +35,9 @@ const analysisSchema = z.object({
 })
 type Analysis = z.infer<typeof analysisSchema>
 
-const SYSTEM = `Você é uma recrutadora brasileira experiente e especialista em ATS
-(sistemas que as empresas usam para filtrar currículos). Avalie o currículo com honestidade e carinho,
-em linguagem simples, calorosa e sem jargões — quem vai ler NÃO é da área de tecnologia.
-
-Responda SOMENTE com um JSON neste formato:
-{
-  "overall_score": 0-100,
-  "scores": { "ats": 0-100, "palavras_chave": 0-100, "estrutura": 0-100, "clareza": 0-100 },
-  "summary": "uma ou duas frases sobre o currículo, começando pelo que está bom",
-  "suggestions": [
-    { "secao": "resumo" | "experiencia" | "formacao" | "habilidades",
-      "titulo": "frase curta com a ação, ex.: Mostre resultados com números",
-      "explicacao": "por que isso ajuda, em 1 ou 2 frases simples",
-      "antes": "trecho EXATO copiado do currículo que será trocado, ou \\"\\" se for algo novo",
-      "depois": "o texto novo, pronto para usar" }
-  ]
-}
-
-Critérios:
-- ats: o currículo é fácil de ler por sistemas (seções claras, sem tabelas/colunas, palavras-chave do cargo).
-- palavras_chave: tem os termos que as vagas do cargo desejado costumam pedir.
-- estrutura: ordem lógica, seções completas, tamanho adequado ao país.
-- clareza: frases objetivas, verbos de ação, resultados concretos.
-- overall_score: média ponderada que reflita o conjunto.
-
-Regras das sugestões (de 3 a 6, as mais importantes primeiro):
-- "resumo": "depois" é o parágrafo de resumo completo, novo ou reescrito (3 a 4 linhas). "antes" é o resumo atual ou "".
-- "experiencia": "antes" é um trecho copiado EXATAMENTE de uma descrição de experiência; "depois" é a versão melhorada desse trecho.
-- "habilidades": "antes" é ""; "depois" é uma lista separada por vírgulas SÓ com as habilidades novas a acrescentar.
-- "formacao": "antes" é ""; "depois" é UM curso ou certificação a acrescentar, ex.: "Excel Avançado — Fundação Bradesco (online, gratuito)".
-- Nunca invente experiências, empresas, datas, números, porcentagens ou resultados que não estejam no currículo.
-  Para números e resultados, use "[X]" para a pessoa completar (ex.: "reduzindo erros em [X]%").
-  Não use afirmações absolutas como "100% de eficiência".
-- Em "habilidades", sugira só termos ligados ao que a pessoa já faz nas experiências descritas,
-  e na "explicacao" lembre que ela deve incluir apenas o que realmente sabe fazer.
-- Escreva no idioma do currículo.
-- Dados pessoais foram trocados por marcadores como [EMAIL_1] e [TELEFONE_1]. Isso é normal: não sugira
-  "adicionar contato" por causa deles e, se precisar citá-los, copie o marcador exatamente.`
-
 /** Resposta de exemplo usada no modo de desenvolvimento (AI_PROVIDER=mock) */
 function mockAnalysis(text: string, firstDescription: string | undefined, hasSummary: boolean): Analysis {
-  const len = text.length
-  const base = Math.min(88, 52 + Math.round(len / 120) + (hasSummary ? 8 : 0))
+  const base = Math.min(88, 52 + Math.round(text.length / 120) + (hasSummary ? 8 : 0))
   const snippet = firstDescription?.split(/(?<=\.)\s/)[0]?.trim()
   const suggestions: Analysis['suggestions'] = [
     {
@@ -155,13 +116,15 @@ Deno.serve(
 
     const raw = await generateJson({
       task: 'analisar-curriculo',
-      system: SYSTEM,
+      system: ANALYZE_SYSTEM,
       prompt,
       schema: analysisSchema,
       temperature: 0.3,
       tier: 'standard',
       mock: () => mockAnalysis(text, content.sections?.experiencias?.[0]?.descricao, Boolean(content.sections?.resumo)),
     })
+    // nenhum número inventado chega à tela: o que não está no currículo vira [X]
+    raw.suggestions = raw.suggestions.map((s) => ({ ...s, depois: guardInventedNumbers(s.depois, [redacted.text]) }))
     const analysis = redacted.restore(raw)
 
     const { data: saved, error: saveError } = await supabase

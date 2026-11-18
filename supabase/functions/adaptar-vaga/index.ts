@@ -11,6 +11,7 @@ import { fetchJobFromUrl } from '../_shared/fetch-job.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import { promptRules } from '../_shared/paises.ts'
 import { redactPersonalData } from '../_shared/privacy.ts'
+import { ADAPT_SYSTEM, guardInventedNumbers } from '../_shared/prompts.ts'
 import { consumeQuota } from '../_shared/quota.ts'
 import { clip, resumeToText, type ResumeContent } from '../_shared/resume.ts'
 
@@ -46,40 +47,6 @@ const adaptSchema = z.object({
 })
 type Adaptation = z.infer<typeof adaptSchema>
 
-const SYSTEM = `Você é uma recrutadora brasileira experiente e especialista em ATS (sistemas que filtram currículos).
-Sua tarefa: adaptar o currículo de uma pessoa para UMA vaga específica, sem inventar nada.
-A pessoa NÃO é da área de tecnologia: escreva em linguagem simples e calorosa.
-
-Responda SOMENTE com um JSON neste formato:
-{
-  "vaga": { "titulo": "cargo da vaga", "empresa": "nome ou null", "local": "cidade/UF ou null",
-            "modalidade": "presencial" | "hibrido" | "remoto" | null,
-            "resumo": "o que a vaga pede, em 1 ou 2 frases" },
-  "compat_antes": 0-100,          // compatibilidade do currículo ATUAL com a vaga
-  "palavras_chave": ["termos importantes da vaga"],
-  "mudancas": [
-    { "secao": "resumo" | "experiencia" | "formacao" | "habilidades",
-      "titulo": "ação curta, ex.: Use o nome do cargo da vaga no resumo",
-      "motivo": "por que ajuda nesta vaga, em 1 frase",
-      "antes": "trecho EXATO copiado do currículo, ou \\"\\" quando for algo novo",
-      "depois": "o texto novo, pronto para usar",
-      "impacto": pontos percentuais que esta mudança acrescenta à compatibilidade (0-30) }
-  ]
-}
-
-Regras das mudanças (de 3 a 6, as de maior impacto primeiro):
-- "resumo": "depois" é o resumo completo reescrito para a vaga (3 a 4 linhas), com o nome do cargo e as palavras-chave
-  que a pessoa REALMENTE tem. "antes" é o resumo atual ou "".
-- "experiencia": "antes" é um trecho copiado EXATAMENTE de uma descrição de experiência; "depois" é o mesmo trecho
-  reescrito com os termos da vaga. Não troque empresas, cargos nem datas.
-- "habilidades": "antes" é ""; "depois" é uma lista separada por vírgulas SÓ com habilidades novas que a experiência
-  descrita comprova (ex.: o termo exato que a vaga usa para algo que a pessoa já faz).
-- "formacao": só se fizer sentido sugerir um curso curto que a vaga valoriza; "antes" é "".
-- Ajuste o TOM ao da vaga (mais formal para bancos e indústria; mais leve para startups e varejo).
-- Nunca invente experiências, ferramentas, certificações, números ou resultados. Use "[X]" para números a completar.
-- Seja honesta em "compat_antes"; a soma dos "impacto" deve ser realista (o total depois não passa de 95).
-- Dados pessoais aparecem como marcadores ([EMAIL_1] etc.); isso é normal, não comente.
-- Escreva no idioma do currículo.`
 
 function mockAdaptation(resumeText: string, jobText: string, firstDescription?: string): Adaptation {
   const title = jobText.split('\n').map((l) => l.trim()).find((l) => l.length > 3)?.slice(0, 80) ?? 'Vaga'
@@ -182,7 +149,7 @@ Deno.serve(
 
     const raw = await generateJson({
       task: 'adaptar-vaga',
-      system: SYSTEM,
+      system: ADAPT_SYSTEM,
       prompt,
       schema: adaptSchema,
       temperature: 0.35,
@@ -190,6 +157,8 @@ Deno.serve(
       mock: () => mockAdaptation(resumeText, jobText, content.sections?.experiencias?.[0]?.descricao),
     })
     step('resposta da IA validada')
+    // nenhum número inventado chega à tela: o que não está no currículo nem no anúncio vira [X]
+    raw.mudancas = raw.mudancas.map((m) => ({ ...m, depois: guardInventedNumbers(m.depois, [redacted.text, jobText]) }))
     const result = redacted.restore(raw)
 
     // dados lidos do próprio site têm preferência sobre o que a IA extraiu

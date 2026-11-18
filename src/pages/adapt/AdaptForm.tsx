@@ -1,38 +1,40 @@
 import { useEffect, useState } from 'react'
 import { Sparkles, X } from 'lucide-react'
-import { AiProgress } from '@/components/ai/ai-progress'
 import { CompanyInitial, MatchPill } from '@/components/brand/pills'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
 import { Input, Textarea } from '@/components/ui/input'
-import { AiError, showAiError } from '@/lib/ai'
+import { startAiTask } from '@/lib/ai-tasks'
 import { useAuth } from '@/lib/auth'
-import { useAdaptResume, useJob } from '@/lib/queries/adapt'
+import { adaptResume, useJob } from '@/lib/queries/adapt'
 import type { Resume } from '@/lib/resume'
 import type { Adaptation } from '@/lib/types'
 import { WORK_MODE_LABEL } from '@/lib/types'
 import { loadDraft, useAutosaveDraft } from '@/lib/use-draft'
 
-const STEPS = ['Lendo a vaga…', 'Comparando com o seu currículo…', 'Ajustando palavras-chave e tom…', 'Preparando as mudanças…']
 const MIN_TEXT = 150
+
+export const ADAPT_TASK = 'adaptar'
+export const ADAPT_STEPS = ['Lendo a vaga…', 'Comparando com a vaga…', 'Escrevendo sugestões…']
+export interface AdaptMeta {
+  baseId: string
+}
 
 interface Props {
   bases: Resume[]
   defaultBaseId: string
   jobId: string | null
   onClearJob: () => void
-  onResult: (a: Adaptation, baseId: string) => void
 }
 
-export function AdaptForm({ bases, defaultBaseId, jobId, onClearJob, onResult }: Props) {
+export function AdaptForm({ bases, defaultBaseId, jobId, onClearJob }: Props) {
   const { user } = useAuth()
   const draftKey = user ? `vp-adaptar-${user.id}` : null
   const [draft, setDraft] = useState(() => loadDraft<{ text: string; url: string }>(draftKey ?? '') ?? { text: '', url: '' })
   const [baseId, setBaseId] = useState(defaultBaseId)
   const [errors, setErrors] = useState<{ text?: string; url?: string }>({})
   const { data: job } = useJob(jobId)
-  const adapt = useAdaptResume()
   useAutosaveDraft(draftKey, draft)
   // com uma vaga escolhida, o campo começa com a descrição salva (que às vezes é resumida)
   const [jobFullText, setJobFullText] = useState('')
@@ -52,28 +54,31 @@ export function AdaptForm({ bases, defaultBaseId, jobId, onClearJob, onResult }:
         return setErrors({ text: 'O anúncio está muito curto. Cole o texto completo, com as responsabilidades e os requisitos.' })
       }
     }
-    adapt.mutate(
-      jobId
-        ? { resumeId: baseId, jobId, jobText: jobFullText.trim() }
-        : { resumeId: baseId, jobId: null, jobText: draft.text.trim(), jobUrl: draft.text.trim() ? '' : draft.url.trim() },
-      {
-        onSuccess: (a) => onResult(a, baseId),
-        onError: (e) => {
-          if (e instanceof AiError && (e.code === 'link_ilegivel' || e.code === 'link_invalido')) {
-            setErrors({ url: e.message })
-            document.getElementById('adapt-text')?.focus()
-          } else if (e instanceof AiError && e.code === 'vaga_curta') {
-            setErrors({ text: e.message })
-            document.getElementById(jobId ? 'adapt-job-text' : 'adapt-text')?.focus()
-          } else {
-            showAiError(e)
-          }
-        },
+    const args = jobId
+      ? { resumeId: baseId, jobId, jobText: jobFullText.trim() }
+      : { resumeId: baseId, jobId: null, jobText: draft.text.trim(), jobUrl: draft.text.trim() ? '' : draft.url.trim() }
+    startAiTask<Adaptation, AdaptMeta>({
+      key: ADAPT_TASK,
+      label: 'Adaptando seu currículo à vaga',
+      path: '/adaptar',
+      readyText: 'A adaptação para a vaga ficou pronta',
+      meta: { baseId },
+      run: () => adaptResume(args),
+      // erros do anúncio aparecem no próprio campo, quando a pessoa está na tela
+      onError: (e) => {
+        if (e.code === 'link_ilegivel' || e.code === 'link_invalido') {
+          setErrors({ url: e.message })
+          setTimeout(() => document.getElementById('adapt-text')?.focus(), 50)
+          return true
+        }
+        if (e.code === 'vaga_curta') {
+          setErrors({ text: e.message })
+          setTimeout(() => document.getElementById(jobId ? 'adapt-job-text' : 'adapt-text')?.focus(), 50)
+          return true
+        }
       },
-    )
+    })
   }
-
-  if (adapt.isPending) return <AiProgress steps={STEPS} />
 
   return (
     <Card className="p-5 sm:p-8">

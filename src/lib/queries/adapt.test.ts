@@ -44,4 +44,9 @@ describe('adaptação à vaga', () => {
     expect(skipped).toBe(1)
     expect(sections.resumo).toBe('Resumo antigo') // original intacto
   })
+
+  it('usa o texto editado (lacunas completadas) quando existir', () => {
+    const { sections: s } = applyAccepted(sections, adaptation, [true, false, false, false], ['Resumo com 15 processos por mês.'])
+    expect(s.resumo).toBe('Resumo com 15 processos por mês.')
+  })
 })

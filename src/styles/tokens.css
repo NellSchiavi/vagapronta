@@ -35,6 +35,9 @@
   --neutral: 107 101 96;        /* cinza "Recusada" */
   --neutral-soft: 237 233 228;
 
+  --warn: 122 88 0;             /* texto sobre o amarelo (lacunas a completar) */
+  --warn-soft: 251 240 201;     /* amarelo suave */
+
   --on-accent: 255 255 255;
 
   color-scheme: light;
@@ -65,6 +68,9 @@
 
   --neutral: 176 168 160;
   --neutral-soft: 52 46 41;
+
+  --warn: 240 210 120;
+  --warn-soft: 66 54 20;
 
   --on-accent: 28 23 19;
 

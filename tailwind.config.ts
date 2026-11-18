@@ -41,6 +41,10 @@ export default {
           DEFAULT: token('neutral'),
           soft: token('neutral-soft'),
         },
+        warn: {
+          DEFAULT: token('warn'),
+          soft: token('warn-soft'),
+        },
         linkedin: {
           DEFAULT: '#0A66C2',
           hover: '#004182',

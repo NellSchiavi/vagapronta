@@ -8,32 +8,9 @@ import { generateJson } from '../_shared/ai.ts'
 import { requireUser } from '../_shared/auth.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import { redactPersonalData } from '../_shared/privacy.ts'
+import { ORGANIZE_SYSTEM } from '../_shared/prompts.ts'
 import { consumeQuota } from '../_shared/quota.ts'
 import { clip, sectionsSchema, type ResumeContent, type ResumeSections } from '../_shared/resume.ts'
-
-const SYSTEM = `Você organiza currículos brasileiros em seções.
-Leia o texto (que pode ter vindo de um PDF, inclusive do PDF de perfil do LinkedIn, com quebras de linha estranhas)
-e devolva SOMENTE um JSON com este formato:
-{
-  "contato": { "email": string?, "telefone": string?, "cidade": string?, "linkedin": string? },
-  "resumo": string?,                         // parágrafo de apresentação, se existir
-  "experiencias": [ { "cargo": string, "empresa": string, "local": string?, "inicio": "AAAA-MM"?, "fim": "AAAA-MM" | null, "descricao": string? } ],
-  "formacao": [ { "curso": string, "instituicao": string, "inicio": "AAAA"?, "fim": "AAAA"? } ],
-  "habilidades": [string],
-  "idiomas": [string],                       // ex.: "Inglês (intermediário)"
-  "cursos": [string]                         // cursos livres e certificações
-}
-Regras:
-- NÃO invente nada. Use só o que está no texto. Se algo não existir, omita o campo ou use lista vazia.
-- "resumo" é SÓ um parágrafo de apresentação escrito pela pessoa. O cargo/título no topo (ex.: "Assistente
-  Administrativa") NÃO é resumo: nesse caso omita "resumo".
-- "cidade" é só cidade e estado (ex.: "Campinas, SP"). Nunca coloque endereço nem marcadores [ENDERECO_x] em "cidade".
-- "fim": null quando for o emprego atual.
-- Mantenha o texto em português, corrigindo apenas quebras de linha e espaços.
-- Experiências da mais recente para a mais antiga.
-- No PDF do LinkedIn, ignore "Contato", "Principais competências" duplicadas, números de página e "Page X of Y".
-- Dados pessoais foram trocados por marcadores como [EMAIL_1], [TELEFONE_1], [LINK_1], [ENDERECO_1].
-  Copie esses marcadores EXATAMENTE como estão para os campos de contato (ex.: "email": "[EMAIL_1]").`
 
 /** Organização simples usada no modo de desenvolvimento (AI_PROVIDER=mock) */
 function mockSections(text: string): ResumeSections {
@@ -51,11 +28,13 @@ function mockSections(text: string): ResumeSections {
   const exp = block(find(/^experi[eê]ncia/i))
   const edu = block(find(/^forma[cç][aã]o/i))
   const skills = block(find(/^(habilidades|compet[eê]ncias)/i))
-  const email = text.match(/[\w.+-]+@[\w-]+\.[\w.]+/)?.[0]
+  const email = text.match(/\[EMAIL_\d+\]|[\w.+-]+@[\w-]+\.[\w.]+/)?.[0]
   return {
     contato: { email },
     resumo: block(find(/^resumo/i)).join(' ') || undefined,
-    experiencias: exp.length ? [{ cargo: exp[0].split(/ na | - | \| /)[0], empresa: exp[0].split(/ na | - | \| /)[1]?.replace(/\(.*$/, '').trim() || 'Empresa', descricao: exp.slice(0).join(' ') }] : [],
+    experiencias: exp.length
+      ? [{ cargo: exp[0].split(/ na | - | \| /)[0], empresa: exp[0].split(/ na | - | \| /)[1]?.replace(/\(.*$/, '').trim() || 'Empresa', descricao: exp.slice(1).join(' ') || undefined }]
+      : [],
     formacao: edu.length ? [{ curso: edu[0].split(/ - | — | \| /)[0], instituicao: edu[0].split(/ - | — | \| /)[1] ?? '' }] : [],
     habilidades: skills.join(', ').split(/[,;]/).map((s) => s.trim()).filter(Boolean),
     idiomas: [],
@@ -84,7 +63,7 @@ Deno.serve(
     const redacted = redactPersonalData(clip(text))
     const sections = await generateJson({
       task: 'organizar-curriculo',
-      system: SYSTEM,
+      system: ORGANIZE_SYSTEM,
       prompt: `Texto do currículo:\n"""\n${redacted.text}\n"""`,
       schema: sectionsSchema,
       temperature: 0.1,

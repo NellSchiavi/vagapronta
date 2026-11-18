@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { AiTasksIndicator } from '@/components/ai/ai-tasks-indicator'
 import { Footer } from '@/components/brand/footer'
 import { Logo } from '@/components/brand/logo'
 import { cn } from '@/lib/utils'
@@ -78,6 +79,7 @@ function Sidebar({ pathname }: { pathname: string }) {
         </ul>
       </nav>
 
+      <AiTasksIndicator className="px-3 pb-3" />
       <div className="border-t border-line p-3">
         <SidebarUserMenu />
       </div>
@@ -95,7 +97,10 @@ function MobileTopBar() {
         <Link to="/" aria-label="VagaPronta — Início" className="rounded-field">
           <Logo size={30} />
         </Link>
-        <TopBarUserMenu />
+        <div className="flex items-center gap-2">
+          <AiTasksIndicator compact />
+          <TopBarUserMenu />
+        </div>
       </div>
     </header>
   )

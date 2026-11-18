@@ -18,16 +18,13 @@ export function useJob(jobId: string | null) {
   })
 }
 
-export function useAdaptResume() {
-  return useMutation({
-    mutationFn: (args: { resumeId: string; jobText?: string; jobUrl?: string; jobId?: string | null }) =>
-      invokeAi<{ adaptation: Adaptation }>('adaptar-vaga', {
-        resume_id: args.resumeId,
-        job_text: args.jobText || undefined,
-        job_url: args.jobUrl || undefined,
-        job_id: args.jobId || undefined,
-      }).then((r) => r.adaptation),
-  })
+export function adaptResume(args: { resumeId: string; jobText?: string; jobUrl?: string; jobId?: string | null }) {
+  return invokeAi<{ adaptation: Adaptation }>('adaptar-vaga', {
+    resume_id: args.resumeId,
+    job_text: args.jobText || undefined,
+    job_url: args.jobUrl || undefined,
+    job_id: args.jobId || undefined,
+  }).then((r) => r.adaptation)
 }
 
 /** Compatibilidade estimada considerando só as mudanças aceitas */
@@ -36,13 +33,16 @@ export function estimatedAfter(a: Adaptation, accepted: boolean[]) {
   return Math.min(95, a.compat_antes + gain)
 }
 
-/** Aplica as mudanças aceitas, uma após a outra. Devolve as seções novas e quantas não couberam. */
-export function applyAccepted(sections: ResumeSections, a: Adaptation, accepted: boolean[]) {
+/**
+ * Aplica as mudanças aceitas, uma após a outra. `edits` traz o texto final de cada
+ * mudança (com as lacunas completadas). Devolve as seções novas e quantas não couberam.
+ */
+export function applyAccepted(sections: ResumeSections, a: Adaptation, accepted: boolean[], edits?: string[]) {
   let current = sections
   let skipped = 0
   a.mudancas.forEach((m, i) => {
     if (!accepted[i]) return
-    const r = applySuggestion(current, { ...m, explicacao: m.motivo, aplicada: false })
+    const r = applySuggestion(current, { ...m, depois: edits?.[i] ?? m.depois, explicacao: m.motivo, aplicada: false })
     if (r.ok) current = r.sections
     else skipped++
   })
@@ -69,8 +69,18 @@ export function useSaveAdaptation() {
   }
 
   const save = useMutation({
-    mutationFn: async ({ base, adaptation, accepted }: { base: Resume; adaptation: Adaptation; accepted: boolean[] }): Promise<SavedAdaptation> => {
-      const { sections, skipped } = applyAccepted(base.content.sections!, adaptation, accepted)
+    mutationFn: async ({
+      base,
+      adaptation,
+      accepted,
+      edits,
+    }: {
+      base: Resume
+      adaptation: Adaptation
+      accepted: boolean[]
+      edits: string[]
+    }): Promise<SavedAdaptation> => {
+      const { sections, skipped } = applyAccepted(base.content.sections!, adaptation, accepted, edits)
       const after = estimatedAfter(adaptation, accepted)
       const v = adaptation.vaga
 

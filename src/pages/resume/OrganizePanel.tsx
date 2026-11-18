@@ -1,30 +1,35 @@
-import { useState } from 'react'
 import { AlertTriangle, Check, LayoutList, RotateCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { AiProgress } from '@/components/ai/ai-progress'
 import { LinkedInIcon } from '@/components/brand/linkedin-icon'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { showAiError } from '@/lib/ai'
+import { clearAiTask, startAiTask, useAiTask } from '@/lib/ai-tasks'
 import { friendlyDataError } from '@/lib/errors'
 import type { Resume, ResumeSections } from '@/lib/resume'
-import { useOrganizeResume, useSaveSections } from '@/lib/queries/resumes'
+import { organizeResume, useSaveSections } from '@/lib/queries/resumes'
 import { looksEmpty, ResumeSnapshot } from './ResumeSnapshot'
+
+const STEPS = ['Lendo seu currículo…', 'Separando experiências e formação…', 'Encontrando suas habilidades…']
 
 /**
  * Primeiro passo de um currículo novo: a IA separa o texto em seções.
  * Nada é guardado até a pessoa conferir e confirmar.
+ * A organização continua mesmo se a pessoa sair da tela (avisamos quando ficar pronta).
  */
 export function OrganizePanel({ resume }: { resume: Resume }) {
-  const organize = useOrganizeResume()
+  const key = `organizar:${resume.id}`
+  const task = useAiTask<ResumeSections>(key)
   const save = useSaveSections()
-  const [preview, setPreview] = useState<ResumeSections | null>(null)
+  const preview = task?.status === 'done' ? task.result ?? null : null
 
   function run() {
-    setPreview(null)
-    organize.mutate(resume.id, {
-      onSuccess: setPreview,
-      onError: showAiError,
+    startAiTask<ResumeSections>({
+      key,
+      label: 'Organizando seu currículo',
+      path: `/curriculo?id=${resume.id}`,
+      readyText: 'Seu currículo foi organizado. Confira antes de guardar.',
+      run: () => organizeResume(resume.id),
     })
   }
 
@@ -33,22 +38,20 @@ export function OrganizePanel({ resume }: { resume: Resume }) {
     save.mutate(
       { resume, sections: preview },
       {
-        onSuccess: () =>
+        onSuccess: () => {
+          clearAiTask(key)
           toast.success('Currículo organizado!', {
             description: 'Agora você já pode descobrir a nota dele.',
             action: { label: 'Desfazer', onClick: () => save.mutate({ resume, sections: null }) },
-          }),
+          })
+        },
         onError: (e) => toast.error(friendlyDataError(e, 'Não conseguimos guardar.')),
       },
     )
   }
 
-  if (organize.isPending) {
-    return (
-      <AiProgress
-        steps={['Lendo seu currículo…', 'Separando experiências e formação…', 'Encontrando suas habilidades…', 'Quase pronto…']}
-      />
-    )
+  if (task && task.status !== 'done') {
+    return <AiProgress steps={STEPS} startedAt={task.startedAt} status={task.status} onRetry={task.retry} />
   }
 
   if (preview) {
@@ -69,7 +72,7 @@ export function OrganizePanel({ resume }: { resume: Resume }) {
           <ResumeSnapshot sections={preview} />
         </div>
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button variant="ghost" onClick={() => setPreview(null)}>
+          <Button variant="ghost" onClick={() => clearAiTask(key)}>
             Descartar
           </Button>
           <Button variant="secondary" onClick={run}>

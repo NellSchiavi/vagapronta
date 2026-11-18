@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { animate, motion, useMotionValue, useTransform } from 'framer-motion'
 import { ArrowRight, Check, RotateCcw, Save } from 'lucide-react'
 import { toast } from 'sonner'
+import { GapEditor, GapText } from '@/components/ai/gap-text'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { friendlyDataError } from '@/lib/errors'
+import { hasGaps } from '@/lib/gaps'
 import { estimatedAfter, useSaveAdaptation, type SavedAdaptation } from '@/lib/queries/adapt'
 import type { Resume } from '@/lib/resume'
 import { WORK_MODE_LABEL, type Adaptation, type ResumeSection } from '@/lib/types'
@@ -39,14 +41,17 @@ interface Props {
 
 export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone }: Props) {
   const [accepted, setAccepted] = useState<boolean[]>(() => a.mudancas.map(() => true))
+  // texto final de cada mudança (a pessoa completa as lacunas como "[X]%")
+  const [edits, setEdits] = useState<string[]>(() => a.mudancas.map((m) => m.depois))
   const { save, undo } = useSaveAdaptation()
   const after = estimatedAfter(a, accepted)
   const count = accepted.filter(Boolean).length
   const allOn = count === a.mudancas.length
+  const pendingGaps = a.mudancas.filter((_, i) => accepted[i] && hasGaps(edits[i])).length
 
   function doSave() {
     save.mutate(
-      { base, adaptation: a, accepted },
+      { base, adaptation: a, accepted, edits },
       {
         onSuccess: (s) => {
           toast.success('Nova versão salva!', {
@@ -166,8 +171,13 @@ export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone 
                 <p className="mb-1 text-xs font-medium uppercase tracking-wider text-success">
                   {m.secao === 'habilidades' ? 'Acrescentar' : m.antes ? 'Fica assim' : 'Novo'}
                 </p>
-                <p>{m.depois}</p>
+                <p>
+                  <GapText text={m.depois} />
+                </p>
               </div>
+              {accepted[i] && hasGaps(m.depois) && (
+                <GapEditor value={edits[i]} onChange={(v) => setEdits((arr) => arr.map((x, k) => (k === i ? v : x)))} />
+              )}
             </Card>
           ))}
         </div>
@@ -182,16 +192,20 @@ export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone 
             <p className="hidden text-sm text-muted sm:block">
               {count} de {a.mudancas.length} {a.mudancas.length === 1 ? 'mudança' : 'mudanças'}
             </p>
-            <Button size="lg" onClick={doSave} loading={save.isPending} disabled={count === 0} className="flex-1 sm:flex-none">
+            <Button size="lg" onClick={doSave} loading={save.isPending} disabled={count === 0 || pendingGaps > 0} className="flex-1 sm:flex-none">
               {!save.isPending && <Save aria-hidden />} Salvar nova versão
             </Button>
           </div>
         </div>
-        {count === 0 && (
+        {count === 0 ? (
           <p className="mt-1 flex items-center gap-1 text-[13px] text-muted">
             <Check className="size-3.5" aria-hidden /> Marque ao menos uma mudança para salvar.
           </p>
-        )}
+        ) : pendingGaps > 0 ? (
+          <p className="mt-1 text-[13px] text-warn">
+            Complete as lacunas em amarelo ({pendingGaps} {pendingGaps === 1 ? 'mudança' : 'mudanças'}) ou desmarque-as para salvar.
+          </p>
+        ) : null}
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from '@/lib/query-client'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/toaster'
@@ -20,11 +21,6 @@ import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { SetupMissingPage } from '@/pages/SetupMissingPage'
 import { StyleGuidePage } from '@/pages/StyleGuidePage'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false },
-  },
-})
 
 export function App() {
   return (

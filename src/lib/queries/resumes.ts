@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/lib/auth'
 import { invokeAi } from '@/lib/ai'
+import { queryClient } from '@/lib/query-client'
 import type { CountryCode } from '@/lib/countries'
 import type { Resume, ResumeContent, ResumeSections, ResumeSource } from '@/lib/resume'
 import { asJson, supabase } from '@/lib/supabase'
@@ -69,32 +70,25 @@ export function useSaveSections() {
   })
 }
 
-export function useOrganizeResume() {
-  return useMutation({
-    mutationFn: (resumeId: string) =>
-      invokeAi<{ sections: ResumeSections }>('organizar-curriculo', { resume_id: resumeId }).then((r) => r.sections),
-  })
+/** Atualiza currículos, análises e Início (pode ser chamado fora de componentes) */
+export function refreshResumeData(resumeId?: string) {
+  queryClient.invalidateQueries({ queryKey: ['resumes'] })
+  queryClient.invalidateQueries({ queryKey: ['home'] })
+  if (resumeId) queryClient.invalidateQueries({ queryKey: ['analyses', resumeId] })
 }
 
-export function useAnalyzeResume() {
-  const refresh = useRefresh()
-  return useMutation({
-    mutationFn: (resumeId: string) =>
-      invokeAi<{ analysis: ResumeAnalysis }>('analisar-curriculo', { resume_id: resumeId }).then((r) => r.analysis),
-    onSuccess: (a) => refresh(a.resume_id),
-  })
+export function analyzeResume(resumeId: string) {
+  return invokeAi<{ analysis: ResumeAnalysis }>('analisar-curriculo', { resume_id: resumeId }).then((r) => r.analysis)
 }
 
-export function useDeleteAnalysis() {
-  const refresh = useRefresh()
-  return useMutation({
-    mutationFn: async (a: ResumeAnalysis) => {
-      const { error } = await supabase.from('resume_analyses').delete().eq('id', a.id)
-      if (error) throw error
-      return a.resume_id
-    },
-    onSuccess: (id) => refresh(id),
-  })
+export function organizeResume(resumeId: string) {
+  return invokeAi<{ sections: ResumeSections }>('organizar-curriculo', { resume_id: resumeId }).then((r) => r.sections)
+}
+
+export async function deleteAnalysis(a: ResumeAnalysis) {
+  const { error } = await supabase.from('resume_analyses').delete().eq('id', a.id)
+  if (error) throw error
+  refreshResumeData(a.resume_id)
 }
 
 /** Marca/desmarca uma sugestão como aplicada e grava o novo conteúdo do currículo */

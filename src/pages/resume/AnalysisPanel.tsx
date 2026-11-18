@@ -1,18 +1,20 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, Check, Copy, RotateCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { AiProgress } from '@/components/ai/ai-progress'
+import { GapEditor, GapText } from '@/components/ai/gap-text'
 import { ScoreRing } from '@/components/brand/score-ring'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { LoadingCards } from '@/components/ui/skeleton'
 import { AtsTerm } from '@/components/ui/tooltip'
-import { showAiError } from '@/lib/ai'
+import { startAiTask, useAiTask } from '@/lib/ai-tasks'
 import { applySuggestion } from '@/lib/apply-suggestion'
 import { friendlyDataError } from '@/lib/errors'
+import { hasGaps } from '@/lib/gaps'
 import type { Resume, ResumeContent } from '@/lib/resume'
-import { useAnalyses, useAnalyzeResume, useDeleteAnalysis, useSetSuggestionApplied } from '@/lib/queries/resumes'
+import { analyzeResume, deleteAnalysis, refreshResumeData, useAnalyses, useSetSuggestionApplied } from '@/lib/queries/resumes'
 import type { AnalysisSuggestion, ResumeAnalysis, ResumeSection } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { ResumeSnapshot } from './ResumeSnapshot'
@@ -25,42 +27,51 @@ const SECTION_LABEL: Record<ResumeSection, string> = {
 }
 const SECTION_ORDER: ResumeSection[] = ['resumo', 'experiencia', 'formacao', 'habilidades']
 
-const ANALYZE_STEPS = [
-  'Lendo seu currículo…',
-  'Comparando com o que as empresas procuram…',
-  'Conferindo as palavras-chave…',
-  'Preparando dicas para você…',
-]
+const ANALYZE_STEPS = ['Lendo seu currículo…', 'Comparando com o que as empresas procuram…', 'Escrevendo sugestões…']
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
 
+/** Dispara a análise em segundo plano (continua mesmo se a pessoa sair da tela) */
+export function startAnalysis(resumeId: string) {
+  startAiTask<ResumeAnalysis>({
+    key: `analisar:${resumeId}`,
+    label: 'Analisando seu currículo',
+    path: `/curriculo?id=${resumeId}`,
+    readyText: 'Sua análise ficou pronta',
+    clearOnSuccess: true,
+    run: () => analyzeResume(resumeId),
+    onSuccess: (a, { onPage }) => {
+      refreshResumeData(a.resume_id)
+      if (onPage) {
+        toast.success(`Pronto! Sua nota é ${a.overall_score}.`, {
+          description: 'A análise foi guardada no seu histórico.',
+          action: {
+            label: 'Desfazer',
+            onClick: () => deleteAnalysis(a).catch((e) => toast.error(friendlyDataError(e, 'Não conseguimos desfazer.'))),
+          },
+        })
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    },
+  })
+}
+
 export function AnalysisPanel({ resume }: { resume: Resume }) {
   const { data: analyses, isLoading } = useAnalyses(resume.id)
-  const analyze = useAnalyzeResume()
-  const remove = useDeleteAnalysis()
+  const task = useAiTask<ResumeAnalysis>(`analisar:${resume.id}`)
   const setApplied = useSetSuggestionApplied()
   const latest = analyses?.[0]
   const latestRef = useRef(latest)
   latestRef.current = latest
 
-  function run() {
-    analyze.mutate(resume.id, {
-      onSuccess: (a) => {
-        toast.success(`Pronto! Sua nota é ${a.overall_score}.`, {
-          description: 'A análise foi guardada no seu histórico.',
-          action: { label: 'Desfazer', onClick: () => remove.mutate(a) },
-        })
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      },
-      onError: showAiError,
-    })
-  }
+  const run = () => startAnalysis(resume.id)
 
-  function apply(index: number) {
+  /** aplica a sugestão; `text` é o "depois" já com as lacunas completadas */
+  function apply(index: number, text: string) {
     const analysis = latestRef.current
     if (!analysis || !resume.content.sections) return
-    const s = analysis.suggestions[index]
+    const s = { ...analysis.suggestions[index], depois: text }
     const result = applySuggestion(resume.content.sections, s)
     if (!result.ok) {
       toast.error(result.reason, { description: 'Você pode copiar a sugestão e ajustar no editor.' })
@@ -77,10 +88,10 @@ export function AnalysisPanel({ resume }: { resume: Resume }) {
             action: {
               label: 'Desfazer',
               onClick: () =>
-                setApplied.mutate(
-                  { analysis: latestRef.current!, index, applied: false, resume, content: before },
-                  { onSuccess: () => toast('Sugestão desfeita.') },
-                ),
+                setApplied
+                  .mutateAsync({ analysis: latestRef.current!, index, applied: false, resume, content: before })
+                  .then(() => toast('Sugestão desfeita.'))
+                  .catch((e) => toast.error(friendlyDataError(e, 'Não conseguimos desfazer.'))),
             },
           }),
         onError: (e) => toast.error(friendlyDataError(e, 'Não conseguimos aplicar a sugestão.')),
@@ -89,7 +100,7 @@ export function AnalysisPanel({ resume }: { resume: Resume }) {
   }
 
   if (isLoading) return <LoadingCards count={2} label="Carregando a análise…" />
-  if (analyze.isPending) return <AiProgress steps={ANALYZE_STEPS} />
+  if (task) return <AiProgress steps={ANALYZE_STEPS} startedAt={task.startedAt} status={task.status} onRetry={task.retry} />
 
   if (!latest) {
     return (
@@ -156,7 +167,15 @@ export function AnalysisPanel({ resume }: { resume: Resume }) {
   )
 }
 
-function Suggestions({ analysis, onApply, busy }: { analysis: ResumeAnalysis; onApply: (i: number) => void; busy: boolean }) {
+function Suggestions({
+  analysis,
+  onApply,
+  busy,
+}: {
+  analysis: ResumeAnalysis
+  onApply: (i: number, text: string) => void
+  busy: boolean
+}) {
   const items = analysis.suggestions.map((s, index) => ({ s, index }))
   const pending = items.filter((x) => !x.s.aplicada).length
   if (!items.length) {
@@ -179,15 +198,19 @@ function Suggestions({ analysis, onApply, busy }: { analysis: ResumeAnalysis; on
         {[...items]
           .sort((a, b) => SECTION_ORDER.indexOf(a.s.secao) - SECTION_ORDER.indexOf(b.s.secao))
           .map(({ s, index }) => (
-            <SuggestionCard key={index} s={s} onApply={() => onApply(index)} busy={busy} />
+            <SuggestionCard key={`${analysis.id}-${index}`} s={s} onApply={(text) => onApply(index, text)} busy={busy} />
           ))}
       </div>
     </section>
   )
 }
 
-function SuggestionCard({ s, onApply, busy }: { s: AnalysisSuggestion; onApply: () => void; busy: boolean }) {
+function SuggestionCard({ s, onApply, busy }: { s: AnalysisSuggestion; onApply: (text: string) => void; busy: boolean }) {
   const isAddition = !s.antes || s.secao === 'habilidades' || s.secao === 'formacao'
+  const withGaps = hasGaps(s.depois)
+  const [draft, setDraft] = useState(s.depois)
+  const blocked = hasGaps(draft)
+
   return (
     <Card className={cn('flex flex-col p-5', s.aplicada && 'border-success/30 bg-success-soft/40')}>
       <p className="mb-2 self-start rounded-full bg-track px-2.5 py-0.5 text-xs font-medium uppercase tracking-wider text-muted">
@@ -206,8 +229,12 @@ function SuggestionCard({ s, onApply, busy }: { s: AnalysisSuggestion; onApply: 
         <p className="mb-1 text-xs font-medium uppercase tracking-wider text-success">
           {isAddition ? (s.secao === 'habilidades' ? 'Acrescentar' : 'Sugestão') : 'Fica assim'}
         </p>
-        <p className="text-ink">{s.depois}</p>
+        <p className="text-ink">
+          <GapText text={s.depois} />
+        </p>
       </div>
+
+      {withGaps && !s.aplicada && <GapEditor value={draft} onChange={setDraft} />}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {s.aplicada ? (
@@ -215,7 +242,7 @@ function SuggestionCard({ s, onApply, busy }: { s: AnalysisSuggestion; onApply: 
             <Check className="size-4" aria-hidden /> Aplicada no currículo
           </span>
         ) : (
-          <Button size="sm" onClick={onApply} disabled={busy}>
+          <Button size="sm" onClick={() => onApply(draft.trim())} disabled={busy || blocked || !draft.trim()}>
             <Check aria-hidden /> Aplicar sugestão
           </Button>
         )}
@@ -225,7 +252,7 @@ function SuggestionCard({ s, onApply, busy }: { s: AnalysisSuggestion; onApply: 
           className="text-muted"
           onClick={() =>
             navigator.clipboard
-              ?.writeText(s.depois)
+              ?.writeText(draft)
               .then(() => toast.success('Texto copiado.'))
               .catch(() => toast.error('Não conseguimos copiar. Selecione o texto e copie manualmente.'))
           }
@@ -233,6 +260,7 @@ function SuggestionCard({ s, onApply, busy }: { s: AnalysisSuggestion; onApply: 
           <Copy aria-hidden /> Copiar
         </Button>
       </div>
+      {blocked && !s.aplicada && <p className="mt-1 text-[13px] text-muted">Complete as lacunas em amarelo para poder aplicar.</p>}
     </Card>
   )
 }
