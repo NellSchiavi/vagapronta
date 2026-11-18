@@ -78,7 +78,8 @@ function CountryCard({ c, checked, onSelect }: { c: CountryInfo; checked: boolea
   )
 }
 
-function OtherCountrySearch({ value, onSelect }: { value: CountryCode; onSelect: (code: CountryCode) => void }) {
+export function OtherCountrySearch({ value, onSelect }: { value: CountryCode | CountryCode[]; onSelect: (code: CountryCode) => void }) {
+  const isSelected = (code: CountryCode) => (Array.isArray(value) ? value.includes(code) : value === code)
   const inputId = useId()
   const listId = useId()
   const [query, setQuery] = useState('')
@@ -151,14 +152,14 @@ function OtherCountrySearch({ value, onSelect }: { value: CountryCode; onSelect:
                           setQuery('')
                           setOpen(false)
                         }}
-                        aria-pressed={p.code === value}
+                        aria-pressed={isSelected(p.code)}
                         className={cn(
                           'flex min-h-touch w-full items-center justify-between gap-3 rounded-[8px] px-3 text-left text-[15px] hover:bg-track/60',
-                          p.code === value && 'font-medium text-terra-strong',
+                          isSelected(p.code) && 'font-medium text-terra-strong',
                         )}
                       >
                         <span>{p.name}</span>
-                        {p.code === value && <Check className="size-4" aria-hidden />}
+                        {isSelected(p.code) && <Check className="size-4" aria-hidden />}
                       </button>
                     </li>
                   ))}
@@ -172,7 +173,7 @@ function OtherCountrySearch({ value, onSelect }: { value: CountryCode; onSelect:
   )
 }
 
-function CountryDetails({
+export function CountryDetails({
   c,
   language,
   onLanguageChange,

@@ -13,7 +13,43 @@ por exemplo: "[X]%", "[número de clientes]", "[nome da ferramenta]".`
 const PRIVACY_NOTE = `Dados pessoais foram trocados por marcadores como [EMAIL_1], [TELEFONE_1], [LINK_1], [ENDERECO_1].
 Isso é normal: não comente e, se precisar citá-los, copie o marcador exatamente.`
 
-const AUDIENCE = 'Quem vai ler NÃO é da área de tecnologia: escreva em linguagem simples, calorosa e sem jargões.'
+const AUDIENCE = `Quem vai ler pode não ser da área de tecnologia: escreva em linguagem simples, calorosa e sem jargões de RH.
+A pessoa pode ser de QUALQUER área (saúde, ciências, tecnologia, indústria, educação, serviços, administração…).
+Não assuma uma área: deduza pelo currículo. Preserve EXATAMENTE termos técnicos, siglas, nomes de exames, técnicas,
+equipamentos, normas, linguagens e registros profissionais (ex.: CRBM, COREN, CRM, CREA, OAB, ISO 15189, BPF, RT-PCR,
+Python, SQL); não traduza nem simplifique esses termos.`
+
+export type CareerStage = 'na_area' | 'primeiro_emprego' | 'estudante' | 'mudando_area' | 'voltando'
+
+/** Orientação extra conforme o momento profissional da pessoa (opcional no perfil) */
+export function careerStageGuidance(
+  stage: string | null | undefined,
+  study?: { curso?: string | null; instituicao?: string | null; periodo?: string | null; conclusao?: string | null },
+): string {
+  const studyLine = [study?.curso, study?.instituicao, study?.periodo, study?.conclusao && `conclusão prevista ${study.conclusao}`]
+    .filter(Boolean)
+    .join(' · ')
+  switch (stage as CareerStage) {
+    case 'estudante':
+      return `MOMENTO PROFISSIONAL: estudante / estágio${studyLine ? ` (${studyLine})` : ''}.
+NÃO cobre experiência profissional. Valorize estágios, projetos, trabalhos e atividades acadêmicas (TCC, iniciação
+científica, monitoria, ligas e empresas juniores), cursos, voluntariado e habilidades. Sugira seções como "Projetos" e
+"Atividades acadêmicas" dentro do resumo ou da formação quando fizer sentido.`
+    case 'primeiro_emprego':
+      return `MOMENTO PROFISSIONAL: em busca do primeiro emprego. NÃO cobre experiência. Valorize cursos, projetos, voluntariado,
+trabalhos informais, atividades escolares e habilidades transferíveis (comunicação, organização, responsabilidade).`
+    case 'mudando_area':
+      return `MOMENTO PROFISSIONAL: mudando de área. Destaque as habilidades transferíveis das experiências anteriores
+e os cursos e projetos ligados à nova área. Não trate a mudança como ponto fraco.`
+    case 'voltando':
+      return `MOMENTO PROFISSIONAL: voltando ao mercado depois de uma pausa. Trate a pausa com naturalidade (não sugira justificá-la),
+valorize a experiência anterior e as atualizações recentes (cursos, voluntariado).`
+    case 'na_area':
+      return 'MOMENTO PROFISSIONAL: já trabalha na área. Valorize resultados e responsabilidades das experiências.'
+    default:
+      return ''
+  }
+}
 
 // ---------------------------------------------------------------------------
 export const ORGANIZE_SYSTEM = `Você organiza currículos brasileiros em seções.
@@ -71,7 +107,9 @@ Regras das sugestões (de 3 a 6, as mais importantes primeiro):
 - "experiencia": "antes" é um trecho copiado EXATAMENTE de uma descrição; "depois" é a versão melhorada desse trecho.
 - "habilidades": "antes" é ""; "depois" é uma lista separada por vírgulas SÓ com habilidades ligadas ao que a pessoa já
   faz nas experiências; na "explicacao", lembre que ela deve incluir apenas o que realmente sabe fazer.
-- "formacao": "antes" é ""; "depois" é UM curso a acrescentar, ex.: "Excel Avançado — Fundação Bradesco (online, gratuito)".
+- "formacao": "antes" é ""; "depois" é UM curso curto, reconhecido e de preferência gratuito, ligado à área da pessoa,
+  no formato "Nome do curso — Instituição (online, gratuito)".
+- Se houver "MOMENTO PROFISSIONAL" no pedido, siga essa orientação ao avaliar e sugerir.
 - Escreva no idioma do currículo.
 - ${PRIVACY_NOTE}`
 
@@ -104,8 +142,9 @@ Regras das mudanças (de 3 a 6, as de maior impacto primeiro):
   termos da vaga. Não troque empresas, cargos nem datas.
 - "habilidades": "antes" é ""; "depois" lista, separada por vírgulas, SÓ habilidades novas que a experiência descrita comprova.
 - "formacao": só se fizer sentido sugerir um curso curto que a vaga valoriza; "antes" é "".
-- Ajuste o TOM ao da vaga (mais formal para bancos e indústria; mais leve para startups e varejo).
+- Ajuste o TOM ao da vaga (mais formal para hospitais, bancos e indústria; mais leve para startups e varejo).
 - Seja honesta em "compat_antes"; a soma dos "impacto" deve ser realista (o total depois não passa de 95).
+- Se houver "MOMENTO PROFISSIONAL" no pedido, siga essa orientação.
 - Escreva no idioma do currículo.
 - ${PRIVACY_NOTE}`
 
@@ -118,8 +157,10 @@ Responda SOMENTE com um JSON neste formato:
 
 Regras da carta:
 - ${NO_INVENTION_RULE}
-- Comece pela saudação (ex.: "Olá, equipe de Gente da Natura!" ou "Prezada equipe de recrutamento,") e termine com uma
-  despedida e o NOME COMPLETO da pessoa. NÃO coloque endereço, telefone, e-mail, data nem cidade: isso vai no cabeçalho.
+- Comece pela saudação (ex.: "Olá, equipe da [empresa]!" ou "Prezada equipe de recrutamento,") e termine com uma
+  despedida e o marcador [NOME] na última linha (o nome real é colocado depois, pelo app).
+  NÃO coloque endereço, telefone, e-mail, data nem cidade: isso vai no cabeçalho.
+- Se houver "MOMENTO PROFISSIONAL" no pedido, siga essa orientação (ex.: para estudantes, fale de projetos e estágios).
 - 3 ou 4 parágrafos curtos, de 220 a 320 palavras no total, separados por uma linha em branco.
 - Conecte 2 ou 3 experiências REAIS do currículo ao que a vaga pede; cite o nome da empresa e do cargo da vaga.
 - Tom pedido:
@@ -127,6 +168,33 @@ Regras da carta:
   • caloroso: próximo e entusiasmado, sem exageros;
   • direto: frases curtas, vai direto às qualificações.
 - Escreva no idioma pedido (padrão: português do Brasil).
+- ${PRIVACY_NOTE}`
+
+// ---------------------------------------------------------------------------
+export const PROFILE_SUGGEST_SYSTEM = `Você lê um currículo (ou o PDF de perfil do LinkedIn) e sugere dados para o perfil da pessoa.
+${AUDIENCE}
+
+Responda SOMENTE com um JSON neste formato (use null ou [] quando NÃO encontrar a informação no documento):
+{
+  "telefone": string | null,             // copie o marcador [TELEFONE_x] se houver
+  "cidade": "Cidade, UF" | null,
+  "linkedin": string | null,             // copie o marcador [LINK_x] do LinkedIn, se houver
+  "links": [{ "rotulo": "GitHub" | "Portfólio" | "Lattes" | "Site" | ..., "url": "[LINK_x]" }],
+  "idiomas": [{ "idioma": "Inglês", "nivel": "basico" | "intermediario" | "avancado" | "fluente" | "nativo" }],
+  "registro": { "conselho": "CRBM", "numero": "12345", "regiao": "1ª Região" } | null,
+  "especializacoes": [string],           // habilitações/especializações citadas
+  "certificacoes": [{ "nome": string, "emissor": string | null, "validade": "AAAA-MM" | null }],
+  "cargos": [string],                    // 1 a 4 cargos que combinam com as experiências e a formação
+  "areas": [string],                     // 1 a 4 áreas de interesse
+  "nivel": "estagio" | "trainee" | "junior" | "pleno" | "senior" | null,
+  "momento": "na_area" | "primeiro_emprego" | "estudante" | "mudando_area" | "voltando" | null
+}
+Regras:
+- ${NO_INVENTION_RULE}
+- Telefone, cidade, LinkedIn, links, idiomas, registro, especializações e certificações: SÓ o que estiver ESCRITO no
+  documento. Se não estiver, use null ou []. Nunca deduza.
+- "cargos", "areas", "nivel" e "momento" podem ser deduzidos das experiências e da formação; se não houver base, use [] ou null.
+- Estudantes sem experiência: "momento" = "estudante" e "nivel" = "estagio".
 - ${PRIVACY_NOTE}`
 
 // ---------------------------------------------------------------------------
@@ -144,10 +212,13 @@ export function guardInventedNumbers(text: string, sources: string[]): string {
   // separa os trechos entre colchetes para não mexer neles
   return text
     .split(/(\[[^\]\n]{0,60}\])/)
-    .map((part) =>
-      part.startsWith('[')
-        ? part
-        : part.replace(/(?<![\w-])\d+(?:[.,]\d+)*(?![\w])/g, (num) => (known.has(norm(num)) ? num : '[X]')),
-    )
+    .map((part) => {
+      if (part.startsWith('[')) {
+        // "[300]" com um número que JÁ está no currículo não é lacuna: devolve o número
+        const inner = part.slice(1, -1).trim()
+        return /^\d+(?:[.,]\d+)*$/.test(inner) && known.has(norm(inner)) ? inner : part
+      }
+      return part.replace(/(?<![\w-])\d+(?:[.,]\d+)*(?![\w])/g, (num) => (known.has(norm(num)) ? num : '[X]'))
+    })
     .join('')
 }

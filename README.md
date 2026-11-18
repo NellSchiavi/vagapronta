@@ -209,7 +209,21 @@ O app aceita tanto o **link** quanto o **código de 6 dígitos** do e-mail, que 
 
 Os dois modelos usam `{{ .ConfirmationURL }}` (o link) e `{{ .Token }}` (o código). No ambiente local, eles já são aplicados automaticamente pelo `supabase/config.toml`.
 
-## 4. Login com LinkedIn (em construção)
+## 4. Ativar login com LinkedIn
+
+Enquanto isso não for feito, o botão "Entrar com LinkedIn" e o "Conectar LinkedIn" (em Meu perfil) mostram um aviso de "em breve". O login por e-mail funciona normalmente.
+
+1. Acesse https://www.linkedin.com/developers/apps e clique em **Create app**.
+   - **App name:** VagaPronta. **LinkedIn Page:** escolha ou crie uma página simples. **Logo:** qualquer imagem quadrada.
+2. Na aba **Products**, adicione **Sign In with LinkedIn using OpenID Connect**.
+3. Na aba **Auth**, copie o **Client ID** e o **Primary Client Secret**.
+4. No Supabase: **Authentication → Sign In / Providers → LinkedIn (OIDC)** → ative, cole o Client ID e o Secret e copie a **Callback URL** mostrada (algo como `https://SEU-PROJETO.supabase.co/auth/v1/callback`).
+5. De volta ao LinkedIn, aba **Auth → Authorized redirect URLs for your app**: cole essa Callback URL e salve.
+6. No Supabase, em **Authentication → Sign In / Providers → (configurações gerais)**, ative **Allow manual linking**. Isso permite que quem entrou por e-mail use **Meu perfil → Conectar LinkedIn**.
+
+**Foto de perfil:** depois de ativar, quem entra com LinkedIn recebe a foto do LinkedIn **automaticamente**. O app baixa a imagem e guarda no Storage, porque o link do LinkedIn expira, e atualiza a foto a cada login com LinkedIn. A pessoa pode sempre trocar por outra foto ou remover a foto em **Meu perfil**; depois disso, o login não troca mais a foto. Nome e e-mail do LinkedIn também preenchem o perfil no primeiro login.
+
+**Testar localmente (opcional):** em `supabase/config.toml`, mude `[auth.external.linkedin_oidc] enabled = true` e crie `supabase/.env` com `SUPABASE_AUTH_EXTERNAL_LINKEDIN_OIDC_CLIENT_ID=...` e `SUPABASE_AUTH_EXTERNAL_LINKEDIN_OIDC_SECRET=...`. No LinkedIn, acrescente a redirect URL `http://127.0.0.1:54321/auth/v1/callback`.
 
 ## 5. Banco de dados na nuvem (em construção)
 
@@ -252,6 +266,8 @@ Os dois modelos usam `{{ .ConfirmationURL }}` (o link) e `{{ .Token }}` (o códi
 **Privacidade:** antes de enviar o currículo para a IA, o app troca **e-mail, telefone, CPF, CEP, endereço e links pessoais** por marcadores (`[EMAIL_1]`, `[TELEFONE_1]`…). Esses dados nunca saem do servidor do app e são recolocados no resultado. Veja `supabase/functions/_shared/privacy.ts`.
 
 ### 6.2 Adzuna (vagas) (em construção)
+
+A busca diária vai usar as preferências de **Meu perfil** e cobrir todas as áreas, não só escritório: inclusive as categorias de **saúde** (`healthcare-nursing-jobs`) e **científicas / controle de qualidade** (`scientific-qa-jobs`) da Adzuna.
 
 ## 7. Funções e busca diária de vagas (em construção)
 

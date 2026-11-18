@@ -2,23 +2,33 @@ import { useId, useLayoutEffect, useRef } from 'react'
 import { PencilLine } from 'lucide-react'
 import { GapText } from '@/components/ai/gap-text'
 import type { LetterPdfData } from '@/components/pdf/letter-pdf'
-import { useProfile } from '@/lib/profile'
+import { registryLine, useProfile } from '@/lib/profile'
 import { countGaps, hasGaps } from '@/lib/gaps'
 import { useResumes } from '@/lib/queries/resumes'
 import { TONE_HELP, TONE_LABEL, type LetterTone } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
-/** Dados do remetente (nome, cargo, contato) para a folha e o PDF */
+/**
+ * Dados do remetente para o cabeçalho de cartas e currículos.
+ * Vêm do "Meu perfil"; o contato do currículo só completa o que faltar.
+ */
 export function useSender() {
   const { data: profile } = useProfile()
   const { data: resumes } = useResumes()
   const principal = resumes?.find((r) => r.is_principal) ?? resumes?.[0]
   const c = principal?.content.sections?.contato ?? {}
+  const contact = [
+    profile?.contact_email || c.email || profile?.email,
+    profile?.phone || c.telefone,
+    profile?.linkedin_url || c.linkedin,
+    ...(profile?.links ?? []).map((l) => l.url),
+  ].filter(Boolean) as string[]
   return {
     name: profile?.full_name?.trim() || 'Seu nome',
     role: profile?.desired_role ?? undefined,
-    contact: [c.email || profile?.email, c.telefone, c.linkedin].filter(Boolean) as string[],
-    place: c.cidade || profile?.city || undefined,
+    registry: registryLine(profile) || undefined,
+    contact: [...new Set(contact)],
+    place: profile?.city || c.cidade || undefined,
   }
 }
 
@@ -82,7 +92,9 @@ export function LetterSheet({ value, onChange, sender, company }: SheetProps) {
     <div className="rounded-card border border-line bg-card shadow-soft">
       <div className="px-5 pb-4 pt-6 sm:px-10 sm:pt-9">
         <p className="font-serif text-[26px] font-medium leading-tight">{sender.name}</p>
-        {sender.role && <p className="mt-0.5 text-sm text-muted">{sender.role}</p>}
+        {(sender.role || sender.registry) && (
+          <p className="mt-0.5 text-sm text-muted">{[sender.role, sender.registry].filter(Boolean).join(' · ')}</p>
+        )}
         {sender.contact.length > 0 && <p className="mt-1.5 break-words text-[13px] text-muted">{sender.contact.join('  ·  ')}</p>}
         <div className="mt-4 h-0.5 w-12 bg-terra" aria-hidden />
         <div className="mt-4 flex flex-wrap justify-between gap-2 text-[13px] text-muted">

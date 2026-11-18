@@ -31,7 +31,8 @@ export function saveBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`
+  // sem extensão, assume PDF; com extensão (ex.: .json), mantém
+  a.download = /\.[a-z0-9]{2,5}$/i.test(fileName) ? fileName : `${fileName}.pdf`
   document.body.appendChild(a)
   a.click()
   a.remove()

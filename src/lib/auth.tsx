@@ -43,6 +43,25 @@ function bootFromUrl(): Promise<string | null> {
   return bootPromise
 }
 
+/**
+ * Quem entra com LinkedIn tem a foto atualizada a cada login (uma vez por sessão),
+ * a não ser que tenha escolhido outra foto ou removido a foto (a função respeita isso).
+ */
+function syncLinkedInPhoto(s: Session) {
+  const linked = (s.user.identities ?? []).some((i) => i.provider === 'linkedin_oidc')
+  if (!linked) return
+  const flag = `vp-foto-linkedin-${s.user.id}`
+  try {
+    if (sessionStorage.getItem(flag)) return
+    sessionStorage.setItem(flag, '1')
+  } catch {
+    /* sem armazenamento: tenta mesmo assim */
+  }
+  supabase.functions.invoke('foto-linkedin', { body: {} }).catch(() => {
+    /* sem foto ou LinkedIn fora do ar: segue com a foto atual */
+  })
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
   const [session, setSession] = React.useState<Session | null>(null)
@@ -60,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       if (active) setSession(s)
+      if (s) syncLinkedInPhoto(s)
     })
     return () => {
       active = false

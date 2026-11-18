@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 export interface Sender {
   name: string
   role?: string
+  registry?: string
   contact: string[]
   place?: string
 }
@@ -23,6 +24,7 @@ export async function downloadResumeById(resumeId: string, sender: Sender, compa
     const blob = await buildResumePdf({
       name: sender.name,
       role: sender.role,
+      registry: sender.registry,
       contact: sender.contact,
       sections: content.sections,
       footerNote: countryInfo(r.country).footer?.text,

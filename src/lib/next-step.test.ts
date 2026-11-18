@@ -88,6 +88,18 @@ describe('computeNextStep', () => {
     expect(s.action.to).toBe('/adaptar?vaga=2')
   })
 
+  it('perfil incompleto vem depois do follow-up e antes de adaptar, levando ao campo que falta', () => {
+    const s = computeNextStep({
+      ...base,
+      profile: { percent: 50, field: 'pref-modalidade' },
+      newJobs: [{ id: '2', title: 'Biomédica', company: 'Lab', compatibility: 95 }],
+    })
+    expect(s.kind).toBe('profile')
+    expect(s.action.to).toBe('/perfil?campo=pref-modalidade')
+    expect(s.meta).toBe('Perfil 50% completo')
+    expect(computeNextStep({ ...base, profile: { percent: 100, field: null } }).kind).toBe('cheer')
+  })
+
   it('85% exatos não contam como alta compatibilidade', () => {
     const s = computeNextStep({ ...base, newJobs: [{ id: '3', title: 'R', company: 'i', compatibility: 85 }] })
     expect(s.kind).toBe('cheer')

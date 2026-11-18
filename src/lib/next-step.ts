@@ -24,9 +24,11 @@ export interface NextStepInput {
   handledJobIds: Set<string>
   /** data de hoje no formato AAAA-MM-DD */
   today: string
+  /** perfil completo (só campos essenciais) e o primeiro campo que falta */
+  profile?: { percent: number; field: string | null }
 }
 
-export type NextStepKind = 'upload' | 'organize' | 'improve' | 'analyze' | 'follow-up' | 'adapt' | 'cheer'
+export type NextStepKind = 'upload' | 'organize' | 'improve' | 'analyze' | 'follow-up' | 'profile' | 'adapt' | 'cheer'
 
 export interface NextStep {
   kind: NextStepKind
@@ -89,6 +91,16 @@ export function computeNextStep(input: NextStepInput): NextStep {
         ? 'O lembrete que você marcou já passou. Uma mensagem curta mostra interesse e pode destravar o processo.'
         : 'Hoje é o dia do retorno que você marcou. Uma mensagem curta mostra interesse.',
       action: { label: 'Abrir candidatura', to: `/candidaturas?id=${a.id}` },
+    }
+  }
+
+  if (input.profile && input.profile.percent < 100) {
+    return {
+      kind: 'profile',
+      title: 'Complete seu perfil para receber vagas melhores',
+      meta: `Perfil ${input.profile.percent}% completo`,
+      description: 'Faltam só alguns dados essenciais, como os cargos que você procura e a modalidade de trabalho.',
+      action: { label: 'Completar perfil', to: input.profile.field ? `/perfil?campo=${input.profile.field}` : '/perfil' },
     }
   }
 

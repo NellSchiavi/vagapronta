@@ -9,6 +9,8 @@ import { loadPdfKit, PDF_COLORS as C, safeName, saveBlob } from './pdf-kit'
 export interface ResumePdfData {
   name: string
   role?: string
+  /** registro profissional, ex.: "CRBM 12345 · 1ª Região (SP)" */
+  registry?: string
   contact: string[]
   sections: ResumeSections
   /** texto de rodapé exigido em alguns países (ex.: autorização GDPR na Itália) */
@@ -60,7 +62,7 @@ export async function buildResumePdf(data: ResumePdfData): Promise<Blob> {
     <Document title={`Currículo — ${data.name}`} author={data.name} language="pt-BR">
       <Page size="A4" style={s.page}>
         <Text style={s.name}>{data.name}</Text>
-        {data.role ? <Text style={s.role}>{data.role}</Text> : null}
+        {data.role || data.registry ? <Text style={s.role}>{[data.role, data.registry].filter(Boolean).join('  ·  ')}</Text> : null}
         {data.contact.length ? <Text style={s.contact}>{data.contact.join('   ·   ')}</Text> : null}
         <View style={s.rule} />
 

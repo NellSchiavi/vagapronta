@@ -13,7 +13,8 @@ import { startAiTask, useAiTask } from '@/lib/ai-tasks'
 import { applySuggestion } from '@/lib/apply-suggestion'
 import { friendlyDataError } from '@/lib/errors'
 import { hasGaps } from '@/lib/gaps'
-import type { Resume, ResumeContent } from '@/lib/resume'
+import { mentionedInResume, resumeSearchText, type Resume, type ResumeContent } from '@/lib/resume'
+import { SkillPicker, splitSkills } from '@/components/ai/skill-picker'
 import { analyzeResume, deleteAnalysis, refreshResumeData, useAnalyses, useSetSuggestionApplied } from '@/lib/queries/resumes'
 import type { AnalysisSuggestion, ResumeAnalysis, ResumeSection } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -157,7 +158,7 @@ export function AnalysisPanel({ resume }: { resume: Resume }) {
         </Card>
       </div>
 
-      <Suggestions analysis={latest} onApply={apply} busy={setApplied.isPending} />
+      <Suggestions analysis={latest} onApply={apply} busy={setApplied.isPending} searchText={resumeSearchText(resume.content)} />
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <History analyses={analyses!} />
@@ -171,10 +172,12 @@ function Suggestions({
   analysis,
   onApply,
   busy,
+  searchText,
 }: {
   analysis: ResumeAnalysis
   onApply: (i: number, text: string) => void
   busy: boolean
+  searchText: string
 }) {
   const items = analysis.suggestions.map((s, index) => ({ s, index }))
   const pending = items.filter((x) => !x.s.aplicada).length
@@ -198,17 +201,32 @@ function Suggestions({
         {[...items]
           .sort((a, b) => SECTION_ORDER.indexOf(a.s.secao) - SECTION_ORDER.indexOf(b.s.secao))
           .map(({ s, index }) => (
-            <SuggestionCard key={`${analysis.id}-${index}`} s={s} onApply={(text) => onApply(index, text)} busy={busy} />
+            <SuggestionCard key={`${analysis.id}-${index}`} s={s} onApply={(text) => onApply(index, text)} busy={busy} searchText={searchText} />
           ))}
       </div>
     </section>
   )
 }
 
-function SuggestionCard({ s, onApply, busy }: { s: AnalysisSuggestion; onApply: (text: string) => void; busy: boolean }) {
+function SuggestionCard({
+  s,
+  onApply,
+  busy,
+  searchText,
+}: {
+  s: AnalysisSuggestion
+  onApply: (text: string) => void
+  busy: boolean
+  searchText: string
+}) {
   const isAddition = !s.antes || s.secao === 'habilidades' || s.secao === 'formacao'
+  const isSkills = s.secao === 'habilidades'
+  const skills = isSkills ? splitSkills(s.depois) : []
+  const inResume = (x: string) => mentionedInResume(x, searchText)
+  const [picked, setPicked] = useState<string[]>(() => skills.filter(inResume))
   const withGaps = hasGaps(s.depois)
-  const [draft, setDraft] = useState(s.depois)
+  const [draftText, setDraft] = useState(s.depois)
+  const draft = isSkills ? picked.join(', ') : draftText
   const blocked = hasGaps(draft)
 
   return (
@@ -229,12 +247,16 @@ function SuggestionCard({ s, onApply, busy }: { s: AnalysisSuggestion; onApply: 
         <p className="mb-1 text-xs font-medium uppercase tracking-wider text-success">
           {isAddition ? (s.secao === 'habilidades' ? 'Acrescentar' : 'Sugestão') : 'Fica assim'}
         </p>
-        <p className="text-ink">
-          <GapText text={s.depois} />
-        </p>
+        {isSkills && !s.aplicada ? (
+          <SkillPicker items={skills} selected={picked} inResume={inResume} onChange={setPicked} />
+        ) : (
+          <p className="text-ink">
+            <GapText text={s.depois} />
+          </p>
+        )}
       </div>
 
-      {withGaps && !s.aplicada && <GapEditor value={draft} onChange={setDraft} />}
+      {withGaps && !isSkills && !s.aplicada && <GapEditor value={draftText} onChange={setDraft} />}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {s.aplicada ? (

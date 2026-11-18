@@ -9,7 +9,7 @@ import { requireUser } from '../_shared/auth.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import { countryInfo } from '../_shared/paises.ts'
 import { redactPersonalData } from '../_shared/privacy.ts'
-import { guardInventedNumbers, LETTER_SYSTEM } from '../_shared/prompts.ts'
+import { careerStageGuidance, guardInventedNumbers, LETTER_SYSTEM } from '../_shared/prompts.ts'
 import { consumeQuota } from '../_shared/quota.ts'
 import { clip, resumeToText, type ResumeContent } from '../_shared/resume.ts'
 
@@ -61,7 +61,11 @@ Deno.serve(
 
     const [{ data: resume }, { data: profile }] = await Promise.all([
       supabase.from('resumes').select('id, content, country').eq('id', resumeId).maybeSingle(),
-      supabase.from('profiles').select('full_name, preferences').eq('user_id', user.id).maybeSingle(),
+      supabase
+        .from('profiles')
+        .select('full_name, preferences, career_stage, study_course, study_institution, study_period, study_expected_end')
+        .eq('user_id', user.id)
+        .maybeSingle(),
     ])
     if (!resume) throw new HttpError(404, 'Não encontramos esse currículo. Atualize a página.', 'nao_encontrado')
 
@@ -91,10 +95,17 @@ Deno.serve(
     const name = profile?.full_name?.trim() || '[seu nome]'
 
     const redacted = redactPersonalData(clip(resumeText, 12000))
+    // o nome da pessoa não vai para a IA: ela escreve [NOME] e o app troca depois
     const prompt = [
       `Tom pedido: ${tone}`,
       `Idioma da carta: ${language}`,
-      `Nome completo para a assinatura: ${name}`,
+      'Assinatura: use o marcador [NOME].',
+      careerStageGuidance(profile?.career_stage, {
+        curso: profile?.study_course,
+        instituicao: profile?.study_institution,
+        periodo: profile?.study_period,
+        conclusao: profile?.study_expected_end,
+      }),
       '',
       'ANÚNCIO DA VAGA:',
       '"""',
@@ -114,10 +125,10 @@ Deno.serve(
       schema: letterSchema,
       temperature: 0.6,
       tier: 'standard',
-      mock: () => mockLetter(name, title || 'a vaga', company, tone),
+      mock: () => mockLetter('[NOME]', title || 'a vaga', company, tone),
     })
     // nenhum número inventado: o que não está no currículo nem no anúncio vira [X]
-    raw.carta = guardInventedNumbers(raw.carta, [redacted.text, jobText])
+    raw.carta = guardInventedNumbers(raw.carta, [prompt]).replace(/\[NOME\]/g, name)
     const letter = redacted.restore(raw)
 
     return json({ letter: { ...letter, tone, job_id: jobId, job_text: jobId ? null : jobText } })

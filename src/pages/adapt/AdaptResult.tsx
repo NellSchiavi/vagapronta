@@ -8,6 +8,8 @@ import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { friendlyDataError } from '@/lib/errors'
 import { hasGaps } from '@/lib/gaps'
+import { mentionedInResume, resumeSearchText } from '@/lib/resume'
+import { SkillPicker, splitSkills } from '@/components/ai/skill-picker'
 import { estimatedAfter, useSaveAdaptation, type SavedAdaptation } from '@/lib/queries/adapt'
 import type { Resume } from '@/lib/resume'
 import { WORK_MODE_LABEL, type Adaptation, type ResumeSection } from '@/lib/types'
@@ -41,13 +43,21 @@ interface Props {
 
 export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone }: Props) {
   const [accepted, setAccepted] = useState<boolean[]>(() => a.mudancas.map(() => true))
+  const searchText = resumeSearchText(base.content)
+  const inResume = (s: string) => mentionedInResume(s, searchText)
+  // habilidades da vaga: vêm marcadas só as que já aparecem no currículo
+  const [picked, setPicked] = useState<string[][]>(() =>
+    a.mudancas.map((m) => (m.secao === 'habilidades' ? splitSkills(m.depois).filter(inResume) : [])),
+  )
   // texto final de cada mudança (a pessoa completa as lacunas como "[X]%")
-  const [edits, setEdits] = useState<string[]>(() => a.mudancas.map((m) => m.depois))
+  const [textEdits, setEdits] = useState<string[]>(() => a.mudancas.map((m) => m.depois))
+  const edits = a.mudancas.map((m, i) => (m.secao === 'habilidades' ? picked[i].join(', ') : textEdits[i]))
   const { save, undo } = useSaveAdaptation()
   const after = estimatedAfter(a, accepted)
   const count = accepted.filter(Boolean).length
   const allOn = count === a.mudancas.length
   const pendingGaps = a.mudancas.filter((_, i) => accepted[i] && hasGaps(edits[i])).length
+  const emptySkills = a.mudancas.some((m, i) => accepted[i] && m.secao === 'habilidades' && picked[i].length === 0)
 
   function doSave() {
     save.mutate(
@@ -171,12 +181,21 @@ export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone 
                 <p className="mb-1 text-xs font-medium uppercase tracking-wider text-success">
                   {m.secao === 'habilidades' ? 'Acrescentar' : m.antes ? 'Fica assim' : 'Novo'}
                 </p>
-                <p>
-                  <GapText text={m.depois} />
-                </p>
+                {m.secao === 'habilidades' ? (
+                  <SkillPicker
+                    items={splitSkills(m.depois)}
+                    selected={picked[i]}
+                    inResume={inResume}
+                    onChange={(sel) => setPicked((arr) => arr.map((x, k) => (k === i ? sel : x)))}
+                  />
+                ) : (
+                  <p>
+                    <GapText text={m.depois} />
+                  </p>
+                )}
               </div>
-              {accepted[i] && hasGaps(m.depois) && (
-                <GapEditor value={edits[i]} onChange={(v) => setEdits((arr) => arr.map((x, k) => (k === i ? v : x)))} />
+              {accepted[i] && m.secao !== 'habilidades' && hasGaps(m.depois) && (
+                <GapEditor value={textEdits[i]} onChange={(v) => setEdits((arr) => arr.map((x, k) => (k === i ? v : x)))} />
               )}
             </Card>
           ))}
@@ -192,7 +211,7 @@ export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone 
             <p className="hidden text-sm text-muted sm:block">
               {count} de {a.mudancas.length} {a.mudancas.length === 1 ? 'mudança' : 'mudanças'}
             </p>
-            <Button size="lg" onClick={doSave} loading={save.isPending} disabled={count === 0 || pendingGaps > 0} className="flex-1 sm:flex-none">
+            <Button size="lg" onClick={doSave} loading={save.isPending} disabled={count === 0 || pendingGaps > 0 || emptySkills} className="flex-1 sm:flex-none">
               {!save.isPending && <Save aria-hidden />} Salvar nova versão
             </Button>
           </div>
@@ -201,6 +220,8 @@ export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone 
           <p className="mt-1 flex items-center gap-1 text-[13px] text-muted">
             <Check className="size-3.5" aria-hidden /> Marque ao menos uma mudança para salvar.
           </p>
+        ) : emptySkills ? (
+          <p className="mt-1 text-[13px] text-warn">Marque ao menos uma habilidade (ou desmarque essa mudança) para salvar.</p>
         ) : pendingGaps > 0 ? (
           <p className="mt-1 text-[13px] text-warn">
             Complete as lacunas em amarelo ({pendingGaps} {pendingGaps === 1 ? 'mudança' : 'mudanças'}) ou desmarque-as para salvar.

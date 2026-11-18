@@ -53,5 +53,28 @@ export interface Resume {
   updated_at: string
 }
 
+const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
+/** Todo o texto do currículo (seções + original), normalizado para busca */
+export function resumeSearchText(c: ResumeContent) {
+  const s = c.sections
+  const parts = [
+    c.raw_text ?? '',
+    s?.resumo ?? '',
+    ...(s?.experiencias ?? []).flatMap((e) => [e.cargo, e.empresa, e.descricao ?? '']),
+    ...(s?.formacao ?? []).flatMap((f) => [f.curso, f.instituicao]),
+    ...(s?.habilidades ?? []),
+    ...(s?.cursos ?? []),
+    ...(s?.idiomas ?? []),
+  ]
+  return norm(parts.join(' \n '))
+}
+
+/** A habilidade (ou termo) aparece em algum lugar do currículo? */
+export function mentionedInResume(term: string, searchText: string) {
+  const t = norm(term.replace(/\(.*?\)/g, '')).trim()
+  return t.length > 1 && searchText.includes(t)
+}
+
 /** Texto mínimo para considerar que um currículo foi lido de verdade */
 export const MIN_RESUME_CHARS = 200

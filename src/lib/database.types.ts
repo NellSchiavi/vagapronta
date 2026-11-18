@@ -77,6 +77,34 @@ isOneToOne: false
       referencedColumns: ["id","user_id"]
     }
                   ]
+                },"job_destinations": {
+                  Row: {
+                    "country_code": string,"created_at": string,"priority": number,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "country_code": string,"created_at"?: string,"priority": number,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "country_code"?: string,"created_at"?: string,"priority"?: number,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"job_preferences": {
+                  Row: {
+                    "areas": (string)[],"blocked_companies": (string)[],"cities": (string)[],"contract_types": (string)[],"created_at": string,"desired_roles": (string)[],"keywords_exclude": (string)[],"keywords_include": (string)[],"languages": NonNullable<Json>,"open_to_relocate": boolean,"salary_currency": string,"salary_max": number | null,"salary_min": number | null,"seniority": (string)[],"suggestions": NonNullable<Json>,"updated_at": string,"user_id": string,"work_modes": (string)[]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "areas"?: (string)[],"blocked_companies"?: (string)[],"cities"?: (string)[],"contract_types"?: (string)[],"created_at"?: string,"desired_roles"?: (string)[],"keywords_exclude"?: (string)[],"keywords_include"?: (string)[],"languages"?: NonNullable<Json>,"open_to_relocate"?: boolean,"salary_currency"?: string,"salary_max"?: number | null,"salary_min"?: number | null,"seniority"?: (string)[],"suggestions"?: NonNullable<Json>,"updated_at"?: string,"user_id"?: string,"work_modes"?: (string)[]
+                  }
+                  Update: {
+                    "areas"?: (string)[],"blocked_companies"?: (string)[],"cities"?: (string)[],"contract_types"?: (string)[],"created_at"?: string,"desired_roles"?: (string)[],"keywords_exclude"?: (string)[],"keywords_include"?: (string)[],"languages"?: NonNullable<Json>,"open_to_relocate"?: boolean,"salary_currency"?: string,"salary_max"?: number | null,"salary_min"?: number | null,"seniority"?: (string)[],"suggestions"?: NonNullable<Json>,"updated_at"?: string,"user_id"?: string,"work_modes"?: (string)[]
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"jobs": {
                   Row: {
                     "company": string | null,"compatibility": number | null,"created_at": string,"description": string | null,"external_id": string | null,"id": string,"location": string | null,"match_notes": NonNullable<Json>,"published_at": string | null,"salary": string | null,"source": string,"status": string,"title": string,"updated_at": string,"url": string | null,"user_id": string,"work_mode": string | null
@@ -93,14 +121,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_url": string | null,"city": string | null,"created_at": string,"desired_role": string | null,"email": string | null,"full_name": string | null,"onboarded_at": string | null,"preferences": NonNullable<Json>,"resume_country": string,"updated_at": string,"user_id": string
+                    "avatar_path": string | null,"avatar_source": string | null,"avatar_url": string | null,"career_stage": string | null,"certifications": NonNullable<Json>,"city": string | null,"contact_email": string | null,"created_at": string,"desired_role": string | null,"email": string | null,"full_name": string | null,"linkedin_url": string | null,"links": NonNullable<Json>,"notify_daily_jobs": boolean,"notify_follow_up": boolean,"onboarded_at": string | null,"phone": string | null,"preferences": NonNullable<Json>,"registry_council": string | null,"registry_number": string | null,"registry_region": string | null,"residence_country": string,"resume_country": string,"specializations": (string)[],"study_course": string | null,"study_expected_end": string | null,"study_institution": string | null,"study_period": string | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "avatar_url"?: string | null,"city"?: string | null,"created_at"?: string,"desired_role"?: string | null,"email"?: string | null,"full_name"?: string | null,"onboarded_at"?: string | null,"preferences"?: NonNullable<Json>,"resume_country"?: string,"updated_at"?: string,"user_id"?: string
+                    "avatar_path"?: string | null,"avatar_source"?: string | null,"avatar_url"?: string | null,"career_stage"?: string | null,"certifications"?: NonNullable<Json>,"city"?: string | null,"contact_email"?: string | null,"created_at"?: string,"desired_role"?: string | null,"email"?: string | null,"full_name"?: string | null,"linkedin_url"?: string | null,"links"?: NonNullable<Json>,"notify_daily_jobs"?: boolean,"notify_follow_up"?: boolean,"onboarded_at"?: string | null,"phone"?: string | null,"preferences"?: NonNullable<Json>,"registry_council"?: string | null,"registry_number"?: string | null,"registry_region"?: string | null,"residence_country"?: string,"resume_country"?: string,"specializations"?: (string)[],"study_course"?: string | null,"study_expected_end"?: string | null,"study_institution"?: string | null,"study_period"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "avatar_url"?: string | null,"city"?: string | null,"created_at"?: string,"desired_role"?: string | null,"email"?: string | null,"full_name"?: string | null,"onboarded_at"?: string | null,"preferences"?: NonNullable<Json>,"resume_country"?: string,"updated_at"?: string,"user_id"?: string
+                    "avatar_path"?: string | null,"avatar_source"?: string | null,"avatar_url"?: string | null,"career_stage"?: string | null,"certifications"?: NonNullable<Json>,"city"?: string | null,"contact_email"?: string | null,"created_at"?: string,"desired_role"?: string | null,"email"?: string | null,"full_name"?: string | null,"linkedin_url"?: string | null,"links"?: NonNullable<Json>,"notify_daily_jobs"?: boolean,"notify_follow_up"?: boolean,"onboarded_at"?: string | null,"phone"?: string | null,"preferences"?: NonNullable<Json>,"registry_council"?: string | null,"registry_number"?: string | null,"registry_region"?: string | null,"residence_country"?: string,"resume_country"?: string,"specializations"?: (string)[],"study_course"?: string | null,"study_expected_end"?: string | null,"study_institution"?: string | null,"study_period"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -155,6 +183,9 @@ isOneToOne: false
 { Args: { "p_daily_limit"?: number,"p_feature": string }; Returns: {
               "allowed": boolean,"daily_limit": number,"used": number
             }[]
+                           },
+"set_job_destinations":
+{ Args: { "p_codes": (string)[] }; Returns: undefined
                            }
           }
           Enums: {

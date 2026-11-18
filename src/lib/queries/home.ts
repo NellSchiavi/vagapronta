@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/lib/auth'
 import { startOfToday, toISODate } from '@/lib/dates'
 import { computeNextStep, HIGH_MATCH, type NextStep } from '@/lib/next-step'
+import { profileCompleteness } from '@/lib/profile-completeness'
 import { supabase } from '@/lib/supabase'
 import type { WorkMode } from '@/lib/types'
 
@@ -45,7 +46,7 @@ export function useHomeData() {
     queryKey: ['home', user?.id],
     enabled: Boolean(user),
     queryFn: async (): Promise<HomeData> => {
-      const [resumesRes, appsRes, jobsRes] = await Promise.all([
+      const [resumesRes, appsRes, jobsRes, profRes, prefsRes] = await Promise.all([
         supabase
           .from('resumes')
           .select('id, is_principal, job_id, updated_at, sections:content->sections')
@@ -56,6 +57,8 @@ export function useHomeData() {
           .select('id, title, company, location, work_mode, compatibility, created_at')
           .eq('status', 'nova')
           .order('compatibility', { ascending: false, nullsFirst: false }),
+        supabase.from('profiles').select('full_name, city').eq('user_id', user!.id).maybeSingle(),
+        supabase.from('job_preferences').select('desired_roles, work_modes, cities').eq('user_id', user!.id).maybeSingle(),
       ])
       if (resumesRes.error) throw resumesRes.error
       if (appsRes.error) throw appsRes.error
@@ -83,6 +86,13 @@ export function useHomeData() {
       }
 
       const isOrganized = Boolean(principal?.sections)
+      const completeness = profileCompleteness({
+        full_name: profRes.data?.full_name,
+        city: profRes.data?.city,
+        desired_roles: prefsRes.data?.desired_roles ?? [],
+        work_modes: prefsRes.data?.work_modes ?? [],
+        cities: prefsRes.data?.cities ?? [],
+      })
       const today = toISODate()
       const todayStart = startOfToday().getTime()
       const active = apps.filter((a) => a.status === 'enviada' || a.status === 'entrevista')
@@ -127,6 +137,7 @@ export function useHomeData() {
           newJobs: jobs,
           handledJobIds,
           today,
+          profile: { percent: completeness.percent, field: completeness.missing[0]?.field ?? null },
         }),
       }
     },

@@ -11,7 +11,7 @@ import { fetchJobFromUrl } from '../_shared/fetch-job.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import { promptRules } from '../_shared/paises.ts'
 import { redactPersonalData } from '../_shared/privacy.ts'
-import { ADAPT_SYSTEM, guardInventedNumbers } from '../_shared/prompts.ts'
+import { ADAPT_SYSTEM, careerStageGuidance, guardInventedNumbers } from '../_shared/prompts.ts'
 import { consumeQuota } from '../_shared/quota.ts'
 import { clip, resumeToText, type ResumeContent } from '../_shared/resume.ts'
 
@@ -98,7 +98,11 @@ Deno.serve(
 
     const [{ data: resume }, { data: profile }] = await Promise.all([
       supabase.from('resumes').select('id, content, country').eq('id', resumeId).maybeSingle(),
-      supabase.from('profiles').select('desired_role').eq('user_id', user.id).maybeSingle(),
+      supabase
+        .from('profiles')
+        .select('desired_role, career_stage, study_course, study_institution, study_period, study_expected_end')
+        .eq('user_id', user.id)
+        .maybeSingle(),
     ])
     if (!resume) throw new HttpError(404, 'Não encontramos esse currículo. Atualize a página.', 'nao_encontrado')
     const content = resume.content as ResumeContent
@@ -135,6 +139,12 @@ Deno.serve(
     const prompt = [
       `Cargo que a pessoa procura: ${profile?.desired_role || 'não informado'}`,
       `País do currículo — ${promptRules(resume.country)}`,
+      careerStageGuidance(profile?.career_stage, {
+        curso: profile?.study_course,
+        instituicao: profile?.study_institution,
+        periodo: profile?.study_period,
+        conclusao: profile?.study_expected_end,
+      }),
       '',
       'ANÚNCIO DA VAGA:',
       '"""',
@@ -158,7 +168,7 @@ Deno.serve(
     })
     step('resposta da IA validada')
     // nenhum número inventado chega à tela: o que não está no currículo nem no anúncio vira [X]
-    raw.mudancas = raw.mudancas.map((m) => ({ ...m, depois: guardInventedNumbers(m.depois, [redacted.text, jobText]) }))
+    raw.mudancas = raw.mudancas.map((m) => ({ ...m, depois: guardInventedNumbers(m.depois, [prompt]) }))
     const result = redacted.restore(raw)
 
     // dados lidos do próprio site têm preferência sobre o que a IA extraiu

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, BellRing, CalendarClock, FileText, LayoutList, PartyPopper, RefreshCw, Search, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
+import { ArrowRight, BellRing, CalendarClock, FileText, LayoutList, PartyPopper, UserRound, RefreshCw, Search, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
 import { CompanyInitial, MatchPill, StatusPill, type ApplicationStatus } from '@/components/brand/pills'
 import { ScoreRing } from '@/components/brand/score-ring'
 import { Button } from '@/components/ui/button'
@@ -71,6 +71,7 @@ function contextLine(d: HomeData) {
 const NEXT_ICON = {
   upload: FileText,
   organize: LayoutList,
+  profile: UserRound,
   analyze: Sparkles,
   improve: TrendingUp,
   'follow-up': BellRing,

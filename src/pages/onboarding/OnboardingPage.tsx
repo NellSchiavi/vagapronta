@@ -14,18 +14,22 @@ import { friendlyDataError } from '@/lib/errors'
 import { useProfile, useUpdateProfile } from '@/lib/profile'
 import { supabase } from '@/lib/supabase'
 import { loadDraft, useAutosaveDraft } from '@/lib/use-draft'
+import { startProfileSuggestions } from '@/pages/profile/suggest'
+import { saveDestinations } from '@/lib/queries/destinations'
 import { AboutStep, type AboutValues } from './AboutStep'
 import { ResumeStep } from './ResumeStep'
 import { CountryStep } from './CountryStep'
 import type { InputMode } from '@/components/resume/resume-input'
 
-const STEPS = ['Sobre você', 'Seu currículo', 'País do currículo'] as const
+const STEPS = ['Sobre você', 'Seu currículo', 'Onde quer trabalhar'] as const
 
 export interface OnboardingDraft {
   step: number
   about: AboutValues
   resume: { mode: InputMode; text: string }
   country: CountryCode
+  /** onde quer trabalhar, em ordem de preferência (o 1º define o formato do currículo) */
+  destinations?: CountryCode[]
   /** idioma escolhido para o currículo (ex.: "it") */
   language?: string | null
   resumeId: string | null
@@ -63,6 +67,7 @@ export function OnboardingPage() {
     },
     resume: { mode: 'pdf', text: '' },
     country: profile.resume_country ?? 'BR',
+    destinations: [profile.resume_country ?? 'BR'],
     language: null,
     resumeId: null,
   }
@@ -119,8 +124,10 @@ function Wizard({ draftKey, initial }: { draftKey: string; initial: OnboardingDr
     }
   }
 
-  async function finish(country: CountryCode, language: string | null) {
+  async function finish(destinations: CountryCode[], language: string | null) {
+    const country = destinations[0] ?? 'BR'
     try {
+      await saveDestinations(destinations)
       if (draft.resumeId) {
         await supabase.from('resumes').update({ country }).eq('id', draft.resumeId)
       }
@@ -131,9 +138,14 @@ function Wizard({ draftKey, initial }: { draftKey: string; initial: OnboardingDr
         preferences: { ...prefs, resume_language: resumeLanguage },
         onboarded_at: new Date().toISOString(),
       })
+      // os cargos do passo 1 (separados por vírgula) viram os "cargos que procuro"
+      const roles = draft.about.desired_role.split(',').map((r) => r.trim()).filter(Boolean)
+      if (roles.length) await supabase.from('job_preferences').update({ desired_roles: roles }).eq('user_id', user!.id)
       discard()
-      toast.success('Tudo pronto!', { description: 'Seu espaço no VagaPronta está preparado.' })
-      navigate('/', { replace: true })
+      // com currículo, a IA procura sugestões para o perfil em segundo plano
+      if (draft.resumeId) startProfileSuggestions(draft.resumeId, user!.id)
+      toast.success('Tudo pronto!', { description: 'Agora, se quiser, revise seu perfil.' })
+      navigate('/perfil?origem=onboarding', { replace: true })
     } catch (err) {
       toast.error(friendlyDataError(err, 'Não conseguimos concluir agora.'))
     }
@@ -191,9 +203,9 @@ function Wizard({ draftKey, initial }: { draftKey: string; initial: OnboardingDr
           )}
           {draft.step === 2 && (
             <CountryStep
-              value={draft.country}
+              destinations={draft.destinations ?? [draft.country]}
               language={draft.language ?? null}
-              onChange={(country) => patch({ country })}
+              onChange={(destinations) => patch({ destinations, country: destinations[0] ?? draft.country })}
               onLanguageChange={(language) => patch({ language })}
               onBack={() => go(1)}
               onFinish={finish}

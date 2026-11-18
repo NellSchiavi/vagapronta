@@ -11,7 +11,7 @@ import { requireUser } from '../_shared/auth.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import { promptRules } from '../_shared/paises.ts'
 import { redactPersonalData } from '../_shared/privacy.ts'
-import { ANALYZE_SYSTEM, guardInventedNumbers } from '../_shared/prompts.ts'
+import { ANALYZE_SYSTEM, careerStageGuidance, guardInventedNumbers } from '../_shared/prompts.ts'
 import { consumeQuota } from '../_shared/quota.ts'
 import { clip, resumeToText, type ResumeContent } from '../_shared/resume.ts'
 
@@ -88,7 +88,11 @@ Deno.serve(
 
     const [{ data: resume, error }, { data: profile }] = await Promise.all([
       supabase.from('resumes').select('id, content, country').eq('id', resumeId).maybeSingle(),
-      supabase.from('profiles').select('desired_role, city').eq('user_id', user.id).maybeSingle(),
+      supabase
+        .from('profiles')
+        .select('desired_role, career_stage, study_course, study_institution, study_period, study_expected_end')
+        .eq('user_id', user.id)
+        .maybeSingle(),
     ])
     if (error) throw new HttpError(500, 'Não conseguimos abrir seu currículo agora. Tente de novo.', 'banco')
     if (!resume) throw new HttpError(404, 'Não encontramos esse currículo. Atualize a página.', 'nao_encontrado')
@@ -105,8 +109,13 @@ Deno.serve(
     const redacted = redactPersonalData(clip(text))
     const prompt = [
       `Cargo desejado: ${profile?.desired_role || 'não informado'}`,
-      `Cidade: ${profile?.city || 'não informada'}`,
       `País do currículo — ${promptRules(resume.country)}`,
+      careerStageGuidance(profile?.career_stage, {
+        curso: profile?.study_course,
+        instituicao: profile?.study_institution,
+        periodo: profile?.study_period,
+        conclusao: profile?.study_expected_end,
+      }),
       '',
       'Currículo:',
       '"""',
@@ -124,7 +133,7 @@ Deno.serve(
       mock: () => mockAnalysis(text, content.sections?.experiencias?.[0]?.descricao, Boolean(content.sections?.resumo)),
     })
     // nenhum número inventado chega à tela: o que não está no currículo vira [X]
-    raw.suggestions = raw.suggestions.map((s) => ({ ...s, depois: guardInventedNumbers(s.depois, [redacted.text]) }))
+    raw.suggestions = raw.suggestions.map((s) => ({ ...s, depois: guardInventedNumbers(s.depois, [redacted.text, prompt]) }))
     const analysis = redacted.restore(raw)
 
     const { data: saved, error: saveError } = await supabase

@@ -3,21 +3,42 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import type { CountryCode } from '@/lib/countries'
-import type { Json } from '@/lib/database.types'
+import type { Database, Json } from '@/lib/database.types'
 
-export interface Profile {
-  user_id: string
-  full_name: string | null
-  email: string | null
-  avatar_url: string | null
-  desired_role: string | null
-  city: string | null
-  resume_country: CountryCode
-  preferences: NonNullable<Json>
-  onboarded_at: string | null
-  created_at: string
-  updated_at: string
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
+
+export type CareerStage = 'na_area' | 'primeiro_emprego' | 'estudante' | 'mudando_area' | 'voltando'
+export interface ProfileLink {
+  rotulo: string
+  url: string
 }
+export interface Certification {
+  nome: string
+  emissor: string | null
+  validade: string | null
+}
+
+export type Profile = Omit<
+  ProfileRow,
+  'resume_country' | 'links' | 'certifications' | 'career_stage' | 'avatar_source' | 'preferences'
+> & {
+  resume_country: CountryCode
+  links: ProfileLink[]
+  certifications: Certification[]
+  career_stage: CareerStage | null
+  avatar_source: 'linkedin' | 'upload' | 'removida' | null
+  preferences: NonNullable<Json>
+}
+
+export type ProfilePatch = Partial<Omit<Profile, 'user_id' | 'created_at' | 'updated_at'>>
+
+export const CAREER_STAGES: { value: CareerStage; label: string; help: string }[] = [
+  { value: 'na_area', label: 'Já trabalho na área', help: 'Tenho experiência na profissão que procuro.' },
+  { value: 'primeiro_emprego', label: 'Primeiro emprego', help: 'Ainda não tive um emprego formal.' },
+  { value: 'estudante', label: 'Estudante / estágio', help: 'Estou estudando e procuro estágio ou primeira vaga.' },
+  { value: 'mudando_area', label: 'Mudando de área', help: 'Quero trabalhar numa área diferente da atual.' },
+  { value: 'voltando', label: 'Voltando ao mercado', help: 'Fiquei um tempo fora e estou retomando.' },
+]
 
 function metaFrom(user: User) {
   const m = user.user_metadata ?? {}
@@ -45,46 +66,71 @@ export function useProfile() {
           .select()
           .single()
         if (insertError) throw insertError
-        return created as Profile
+        return created as unknown as Profile
       }
 
       // entrou depois pelo LinkedIn: completa nome e foto que estavam vazios
-      const patch: Partial<Profile> = {}
+      const patch: { avatar_url?: string; full_name?: string } = {}
       if (!data.avatar_url && meta.avatar_url) patch.avatar_url = meta.avatar_url
       if (!data.full_name && meta.full_name) patch.full_name = meta.full_name
       if (Object.keys(patch).length) {
-        const { data: updated } = await supabase
-          .from('profiles')
-          .update(patch)
-          .eq('user_id', user!.id)
-          .select()
-          .single()
-        if (updated) return updated as Profile
+        const { data: updated } = await supabase.from('profiles').update(patch).eq('user_id', user!.id).select().single()
+        if (updated) return updated as unknown as Profile
       }
-      return data as Profile
+      return data as unknown as Profile
     },
   })
+}
+
+export async function updateProfile(userId: string, patch: ProfilePatch) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(patch as unknown as Database['public']['Tables']['profiles']['Update'])
+    .eq('user_id', userId)
+    .select()
+    .single()
+  if (error) throw error
+  return data as unknown as Profile
 }
 
 export function useUpdateProfile() {
   const { user } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (patch: Partial<Omit<Profile, 'user_id' | 'created_at' | 'updated_at'>>) => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(patch)
-        .eq('user_id', user!.id)
-        .select()
-        .single()
-      if (error) throw error
-      return data as Profile
+    mutationFn: (patch: ProfilePatch) => updateProfile(user!.id, patch),
+    onSuccess: (profile) => {
+      qc.setQueryData(['profile', user?.id], profile)
+      qc.invalidateQueries({ queryKey: ['home', user?.id] })
     },
-    onSuccess: (profile) => qc.setQueryData(['profile', user?.id], profile),
   })
 }
 
 /** Primeiro nome para saudações ("Olá, Nelson!") */
 export function firstName(profile?: Pick<Profile, 'full_name'> | null) {
   return profile?.full_name?.trim().split(/\s+/)[0] ?? ''
+}
+
+/** Linha do registro profissional, ex.: "CRBM 12345 · 1ª Região (SP)" (vazio se não houver) */
+export function registryLine(p?: Pick<Profile, 'registry_council' | 'registry_number' | 'registry_region'> | null) {
+  if (!p?.registry_council?.trim()) return ''
+  return [[p.registry_council.trim(), p.registry_number?.trim()].filter(Boolean).join(' '), p.registry_region?.trim()]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+/** URL da foto: a guardada no app (link assinado) ou, se não houver, a do LinkedIn */
+export function useAvatarUrl(profile?: Pick<Profile, 'avatar_path' | 'avatar_url' | 'avatar_source'> | null) {
+  const path = profile?.avatar_path ?? null
+  const { data: signed } = useQuery({
+    queryKey: ['avatar', path],
+    enabled: Boolean(path),
+    staleTime: 50 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.storage.from('avatares').createSignedUrl(path!, 3600)
+      if (error) throw error
+      return data.signedUrl
+    },
+  })
+  if (profile?.avatar_source === 'removida') return null
+  return path ? signed ?? null : profile?.avatar_url ?? null
 }

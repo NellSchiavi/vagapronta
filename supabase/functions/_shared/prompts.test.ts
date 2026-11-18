@@ -1,9 +1,41 @@
 import { describe, expect, it } from 'vitest'
-import { ADAPT_SYSTEM, ANALYZE_SYSTEM, guardInventedNumbers, LETTER_SYSTEM, NO_INVENTION_RULE, ORGANIZE_SYSTEM } from './prompts'
+import {
+  ADAPT_SYSTEM,
+  ANALYZE_SYSTEM,
+  careerStageGuidance,
+  guardInventedNumbers,
+  LETTER_SYSTEM,
+  NO_INVENTION_RULE,
+  ORGANIZE_SYSTEM,
+  PROFILE_SUGGEST_SYSTEM,
+} from './prompts'
+
+const ALL = { ORGANIZE_SYSTEM, ANALYZE_SYSTEM, ADAPT_SYSTEM, LETTER_SYSTEM, PROFILE_SUGGEST_SYSTEM }
+
+describe('prompts para qualquer área e momento profissional', () => {
+  it('não assumem uma área e preservam termos técnicos', () => {
+    for (const [name, p] of Object.entries({ ANALYZE_SYSTEM, ADAPT_SYSTEM, LETTER_SYSTEM, PROFILE_SUGGEST_SYSTEM })) {
+      expect(p, name).toMatch(/QUALQUER área/)
+      expect(p, name).toMatch(/CRBM/)
+    }
+  })
+
+  it('para estudantes, não cobra experiência e valoriza projetos e atividades acadêmicas', () => {
+    const g = careerStageGuidance('estudante', { curso: 'Biomedicina', periodo: '6º semestre' })
+    expect(g).toMatch(/NÃO cobre experiência/)
+    expect(g).toMatch(/projetos/)
+    expect(g).toMatch(/Biomedicina · 6º semestre/)
+    expect(careerStageGuidance(null)).toBe('')
+  })
+
+  it('a carta usa o marcador [NOME] (o nome não vai para a IA)', () => {
+    expect(LETTER_SYSTEM).toMatch(/\[NOME\]/)
+  })
+})
 
 describe('regra fixa contra invenção', () => {
   it('está em todos os prompts de IA', () => {
-    for (const [name, p] of Object.entries({ ORGANIZE_SYSTEM, ANALYZE_SYSTEM, ADAPT_SYSTEM, LETTER_SYSTEM })) {
+    for (const [name, p] of Object.entries(ALL)) {
       expect(p, name).toContain(NO_INVENTION_RULE)
     }
     expect(NO_INVENTION_RULE).toMatch(/números/)
@@ -28,6 +60,14 @@ describe('guardInventedNumbers', () => {
       'Conduzo 15 processos por mês desde 2021, com 2 anos de eSocial.',
     )
     expect(guardInventedNumbers('pretensão de R$ 4500', [cv])).toBe('pretensão de R$ 4500')
+  })
+
+  it('"[300]" com número que já está no currículo volta a ser só o número', () => {
+    expect(guardInventedNumbers('cerca de [15] processos e [42] outros', [cv])).toBe('cerca de 15 processos e [42] outros')
+  })
+
+  it('números do pedido (ex.: "6º semestre") também contam como fonte', () => {
+    expect(guardInventedNumbers('Estudante (6º semestre)', [cv, 'MOMENTO: estudante · 6º semestre'])).toBe('Estudante (6º semestre)')
   })
 
   it('não mexe em lacunas nem em marcadores de privacidade', () => {

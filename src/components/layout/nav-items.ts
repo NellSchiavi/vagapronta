@@ -1,4 +1,4 @@
-import { FileText, Home, KanbanSquare, PenLine, Search, Sparkles, type LucideIcon } from 'lucide-react'
+import { FileText, Home, KanbanSquare, PenLine, Search, Sparkles, UserRound, type LucideIcon } from 'lucide-react'
 
 export interface NavItem {
   to: string
@@ -24,6 +24,8 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/cartas', label: 'Cartas', short: 'Cartas', icon: PenLine, mobile: false, match: ['/cartas'] },
   { to: '/vagas', label: 'Vagas', short: 'Vagas', icon: Search, mobile: true, match: ['/vagas'] },
   { to: '/candidaturas', label: 'Candidaturas', short: 'Candidaturas', icon: KanbanSquare, mobile: true, match: ['/candidaturas'] },
+  // no celular, "Meu perfil" fica no menu do avatar (topo)
+  { to: '/perfil', label: 'Meu perfil', short: 'Perfil', icon: UserRound, mobile: false, match: ['/perfil'] },
 ]
 
 export function isActive(item: NavItem, pathname: string, desktop: boolean) {
