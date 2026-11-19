@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import type { ApplicationStatus } from '@/components/brand/pills'
+import { statusChange } from '@/lib/application-rules'
 import { useAuth } from '@/lib/auth'
 import { queryClient } from '@/lib/query-client'
 import { supabase } from '@/lib/supabase'
@@ -140,4 +141,34 @@ export async function addApplicationForJob(args: { jobId: string; resumeId?: str
   refreshApplications()
   queryClient.invalidateQueries({ queryKey: ['letter-jobs'] })
   return { id: data.id, created: true }
+}
+
+/** Currículo adaptado e carta já feitos para uma vaga (para anexar na inscrição) */
+export function useJobDocuments(jobId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['job-docs', jobId],
+    enabled,
+    queryFn: async () => {
+      const [{ data: resume }, { data: letter }] = await Promise.all([
+        supabase.from('resumes').select('id').eq('job_id', jobId).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+        supabase.from('cover_letters').select('id').eq('job_id', jobId).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+      ])
+      return { resumeId: resume?.id ?? null, letterId: letter?.id ?? null }
+    },
+  })
+}
+
+/**
+ * A pessoa confirmou que se candidatou no site da vaga: move para "Enviada",
+ * marca a data de envio e sugere o retorno em 7 dias. Devolve a data do lembrete.
+ */
+export async function markApplicationSent(id: string, today: string) {
+  const { data: app, error } = await supabase.from('applications').select('status, applied_on, follow_up_on').eq('id', id).single()
+  if (error) throw error
+  // quem já está em entrevista/oferta/recusada não volta para "Enviada"
+  if (app.status !== 'preparacao') return app.follow_up_on as string | null
+  const { patch, followUpSuggested } = statusChange(app as Parameters<typeof statusChange>[0], 'enviada', today)
+  await updateApplication(id, patch)
+  refreshApplications()
+  return followUpSuggested ?? (app.follow_up_on as string | null)
 }

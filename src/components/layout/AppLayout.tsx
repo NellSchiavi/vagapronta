@@ -4,6 +4,7 @@ import { AiTasksIndicator } from '@/components/ai/ai-tasks-indicator'
 import { Footer } from '@/components/brand/footer'
 import { Logo } from '@/components/brand/logo'
 import { cn } from '@/lib/utils'
+import { ApplyReturnPrompt } from '@/pages/jobs/ApplyFlow'
 import { isActive, NAV_ITEMS } from './nav-items'
 import { SidebarUserMenu, TopBarUserMenu } from './user-menu'
 
@@ -43,6 +44,8 @@ export function AppLayout() {
       </div>
 
       <BottomNav pathname={pathname} />
+      {/* ao voltar do site de uma vaga: "Você se candidatou?" */}
+      <ApplyReturnPrompt />
     </div>
   )
 }

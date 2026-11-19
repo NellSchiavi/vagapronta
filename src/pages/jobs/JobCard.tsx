@@ -9,7 +9,7 @@ import { friendlyDataError } from '@/lib/errors'
 import { setJobStatus, SOURCE_LABEL } from '@/lib/queries/jobs'
 import { WORK_MODE_LABEL, type Job } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { AddToApplicationsButton } from '@/pages/applications/AddToApplicationsButton'
+import { ApplyButton } from './ApplyFlow'
 
 const LANG: Record<string, string> = { en: 'inglês', de: 'alemão', es: 'espanhol', fr: 'francês', it: 'italiano', pt: 'português', nl: 'holandês' }
 
@@ -110,20 +110,25 @@ export function JobCard({ job, priority }: { job: Job; priority: number | null }
       {job.salary && <p className="mt-1 text-[13px] text-muted">Salário: {job.salary}</p>}
 
       <div className="mt-4 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
-        <Button asChild>
+        <ApplyButton job={job} />
+        <Button asChild variant={job.url ? 'secondary' : 'primary'}>
           <Link to={`/adaptar?vaga=${job.id}`}>
             <Sparkles aria-hidden /> Adaptar currículo
           </Link>
         </Button>
-        <AddToApplicationsButton jobId={job.id} variant="secondary" label="Candidatar" />
         {job.url && (
           <Button asChild variant="ghost">
             <a href={job.url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink aria-hidden /> Ver anúncio
+              <ExternalLink aria-hidden /> Ver vaga
             </a>
           </Button>
         )}
       </div>
+      {job.url && (
+        <p className="mt-2 text-xs text-muted">
+          “Ver vaga” só abre o anúncio. “Me candidatar” prepara seus arquivos e abre o site da vaga para <strong className="font-medium text-ink/80">você</strong> se inscrever lá.
+        </p>
+      )}
 
       <p className="mt-3 flex flex-wrap items-center gap-x-2 text-xs text-muted">
         {example ? (

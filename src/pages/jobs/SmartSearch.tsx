@@ -43,7 +43,7 @@ export function SmartSearch({ roles, destinations, city, workModes }: Props) {
         Procure também em
       </h2>
       <p className="mt-1 text-sm text-muted">
-        Os sites abaixo abrem já com a sua busca. Muitas vagas (principalmente presenciais) só aparecem lá.
+        Abre o site com a busca pronta. Achou uma vaga? Cole o link aqui para adaptar seu currículo.
       </p>
 
       {roles.length > 1 && (
