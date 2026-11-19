@@ -4,7 +4,7 @@
  * recebem apenas o termo de busca (ex.: "data analyst") e o país.
  *
  * Sem chave:  Jobicy, Himalayas, Arbeitnow, Remotive
- * Com chave:  Jooble (JOOBLE_API_KEY) — sem a chave, fica desligada
+ * Com chave:  Jooble, uma chave por país (JOOBLE_API_KEY_BR, JOOBLE_API_KEY_PT, JOOBLE_API_KEY = EUA) — sem a chave, fica desligada
  *             (ou mostra vagas de EXEMPLO quando JOBS_MODE=mock)
  * Desligada:  Adzuna (não é gratuita) — ver ./adzuna.ts
  *
@@ -258,22 +258,34 @@ function remotive(dest: string): SourceQuery | null {
 }
 
 // ---------------------------------------------------------------------------
-// Jooble — Brasil e Portugal, inclusive presenciais. Exige chave (formulário
-// em jooble.org/api/about). Sem a chave, fica desligada.
+// Jooble — inclusive vagas presenciais. Cada chave vale só para o site do país
+// onde foi pedida (br.jooble.org, pt.jooble.org, jooble.org = EUA), então há
+// uma chave por país. Sem a chave do país, a Jooble fica desligada para ele.
 // ---------------------------------------------------------------------------
 interface JoobleJob { id: number | string; title: string; location?: string; snippet?: string; salary?: string; type?: string; link: string; company?: string; updated?: string }
-const JOOBLE_LOCATION: Record<string, string> = { BR: 'Brasil', PT: 'Portugal' }
+export const JOOBLE_COUNTRIES: Record<string, { env: string; host: string; location: string }> = {
+  BR: { env: 'JOOBLE_API_KEY_BR', host: 'br.jooble.org', location: 'Brasil' },
+  PT: { env: 'JOOBLE_API_KEY_PT', host: 'pt.jooble.org', location: 'Portugal' },
+  US: { env: 'JOOBLE_API_KEY', host: 'jooble.org', location: '' },
+}
+
+/** chave da Jooble para a região da busca (ou null se o país não tiver chave) */
+export function joobleKey(dest: string): string | null {
+  const c = JOOBLE_COUNTRIES[dest]
+  return (c && Deno.env.get(c.env)?.trim()) || null
+}
 
 function jooble(dest: string, role: string, city: string | null): SourceQuery | null {
-  const key = Deno.env.get('JOOBLE_API_KEY')
-  if (!key || !JOOBLE_LOCATION[dest]) return null
-  const location = dest === 'BR' && city ? city : JOOBLE_LOCATION[dest]
+  const key = joobleKey(dest)
+  if (!key) return null
+  const { host, location: country } = JOOBLE_COUNTRIES[dest]
+  const location = dest === 'BR' && city ? city : country
   return {
     key: `jooble:${dest}:${role}:${location}`,
     source: 'jooble',
     minIntervalMin: 60,
     run: async () => {
-      const data = await getJson<{ jobs?: JoobleJob[] }>(`https://jooble.org/api/${key}`, {
+      const data = await getJson<{ jobs?: JoobleJob[] }>(`https://${host}/api/${key}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keywords: role, location }),
@@ -298,7 +310,8 @@ function jooble(dest: string, role: string, city: string | null): SourceQuery | 
   }
 }
 
-export const keySourcesMissing = () => (Deno.env.get('JOOBLE_API_KEY') ? [] : ['jooble'])
+/** fontes com chave que ainda não estão ligadas para este destino */
+export const keySourcesMissing = (dest: string) => (joobleKey(dest) ? [] : ['jooble'])
 
 /**
  * Consultas para um destino. Usa no máximo 2 cargos (para poupar as fontes);

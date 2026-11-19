@@ -296,7 +296,7 @@ Regra do app: **só fontes 100% gratuitas, sem cartão, com uso permitido pelos 
 | **Himalayas** | não (opcional, gratuita) | vagas remotas abertas a cada país | botão com o link original; link visível para a fonte; não repassar a outros sites; só pelo servidor |
 | **Arbeitnow** | não | Europa (sobretudo Alemanha), presenciais e remotas | "não abuse" e link de volta |
 | **Remotive** | não | poucas vagas remotas (com 24 h de atraso) | no máx. 4 consultas por dia; crédito "Remotive" com link |
-| **Jooble** | **sim** (formulário) | o país do site onde a chave foi pedida | ligada só com `JOOBLE_API_KEY`; a chave nunca aparece em logs |
+| **Jooble** | **sim** (formulário, **uma por país**) | Brasil, Portugal e EUA, inclusive presenciais | cada chave só vale no site do país onde foi pedida; a busca escolhe a chave pela região; a chave nunca aparece em logs |
 | Adzuna | — | — | **desligada**: não é gratuita (exige cartão) |
 
 O app guarda cada consulta em cache (`source_cache`) e só consulta de novo depois do intervalo pedido pela fonte, mesmo com várias pessoas.
@@ -306,7 +306,7 @@ O app guarda cada consulta em cache (`source_cache`) e só consulta de novo depo
 **Variáveis (secrets das Edge Functions):**
 
 - `JOBS_MODE`: `real` (padrão na nuvem); `mock` (desenvolvimento: no lugar das fontes com chave ainda não ligadas aparecem **vagas de exemplo**, marcadas como exemplo na tela); `offline` (usa só o cache, sem rede).
-- `JOOBLE_API_KEY` e `HIMALAYAS_API_KEY`: opcionais.
+- `JOOBLE_API_KEY_BR` (pedida em br.jooble.org/api/about), `JOOBLE_API_KEY_PT` (pt.jooble.org/api/about), `JOOBLE_API_KEY` (jooble.org, vagas dos EUA) e `HIMALAYAS_API_KEY`: opcionais. Sem a chave de um país, a Jooble fica desligada só para ele.
 
 **Compatibilidade estimada:** a busca compara, **sem IA** (custo zero), o título da vaga com os cargos desejados e as habilidades do currículo com o anúncio. A análise completa, com IA, acontece ao tocar em "Adaptar currículo". Os pesos por destino (ex.: 60/30/10) e o bônus de prioridade ficam em `supabase/functions/_shared/destinos.ts`.
 

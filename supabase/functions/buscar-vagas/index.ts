@@ -105,9 +105,8 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
   let found = 0
   let usedExamples = false
   const rows: Record<string, unknown>[] = []
-  const missingKeys = keySourcesMissing()
-
   for (const { code: dest, count } of distributeSearch(PER_RUN, destinations)) {
+    const missingKeys = keySourcesMissing(dest)
     let pool: FoundJob[] = []
     for (const q of queriesFor(dest, roles, city)) {
       try {
