@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { cleanJobUrl } from '@/lib/links'
-import { ArrowRight, ExternalLink, Link2 } from 'lucide-react'
+import { ArrowRight, ExternalLink, Link2, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { countryInfo, type CountryCode } from '@/lib/paises'
-import { smartLinks } from '@/lib/smart-search'
+import { areaLinks, type Area } from '@/lib/area-sites'
+import { smartLinks, type SmartLink } from '@/lib/smart-search'
 import type { WorkMode } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -16,13 +17,19 @@ interface Props {
   destinations: CountryCode[]
   city: string | null
   workModes: WorkMode[]
+  /** áreas da pessoa (saúde, TI): acrescenta os sites específicos */
+  areas?: Area[]
+  /** registro profissional (ex.: CRBM 1ª Região), para o site do Conselho certo */
+  registry?: string | null
+  /** em destaque no topo (as fontes automáticas trouxeram poucas vagas) */
+  highlight?: boolean
 }
 
 /**
  * "Procure também em": abre os sites de vagas já na busca certa (cargo, cidade
  * e modalidade). Ao voltar, a pessoa cola o link da vaga para importar e adaptar.
  */
-export function SmartSearch({ roles, destinations, city, workModes }: Props) {
+export function SmartSearch({ roles, destinations, city, workModes, areas = [], registry, highlight = false }: Props) {
   const navigate = useNavigate()
   const [role, setRole] = useState(roles[0] ?? '')
   const [link, setLink] = useState('')
@@ -40,7 +47,12 @@ export function SmartSearch({ roles, destinations, city, workModes }: Props) {
   }
 
   return (
-    <Card className="p-5 sm:p-6" aria-labelledby="procure-titulo">
+    <Card className={cn('p-5 sm:p-6', highlight && 'border-terra/40 bg-terra-soft/50 shadow-soft')} aria-labelledby="procure-titulo">
+      {highlight && (
+        <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1 text-sm font-medium text-terra-strong">
+          <Star className="size-4" aria-hidden /> Para a sua área, as melhores vagas costumam estar nestes sites
+        </p>
+      )}
       <h2 id="procure-titulo" className="text-[22px]">
         Procure também em
       </h2>
@@ -74,32 +86,22 @@ export function SmartSearch({ roles, destinations, city, workModes }: Props) {
       <div className="mt-5 space-y-5">
         {destinations.map((dest, i) => {
           const links = smartLinks(dest, { role, city, workModes })
-          if (!links.length) return null
+          const area = areaLinks(dest, areas, { registry })
+          if (!links.length && !area.length) return null
           return (
             <section key={dest} aria-label={`Sites para ${countryInfo(dest).name}`}>
               <h3 className="font-sans text-[15px] font-medium">
                 {destinations.length > 1 ? `${i + 1}º · ` : ''}
                 {countryInfo(dest).name}
               </h3>
-              <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {links.map((l) => (
-                  <li key={l.site}>
-                    <a
-                      href={l.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex min-h-touch items-center justify-between gap-3 rounded-field border border-line-strong bg-card px-3.5 py-2 text-[15px] font-medium hover:border-terra/60 hover:bg-terra-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terra/40"
-                    >
-                      <span className="min-w-0">
-                        <span className="block">{l.site}</span>
-                        {l.note && <span className="block text-xs font-normal text-muted">{l.note}</span>}
-                      </span>
-                      <ExternalLink className="size-4 shrink-0 text-muted" aria-hidden />
-                      <span className="sr-only">(abre em outra aba)</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              {area.length > 0 && (
+                <>
+                  <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted">Da sua área</p>
+                  <SiteList links={area} />
+                  <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted">Busca pronta com “{role}”</p>
+                </>
+              )}
+              <SiteList links={links} />
             </section>
           )
         })}
@@ -131,5 +133,29 @@ export function SmartSearch({ roles, destinations, city, workModes }: Props) {
         </div>
       </form>
     </Card>
+  )
+}
+
+function SiteList({ links }: { links: SmartLink[] }) {
+  return (
+    <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {links.map((l) => (
+        <li key={l.url}>
+          <a
+            href={l.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-touch items-center justify-between gap-3 rounded-field border border-line-strong bg-card px-3.5 py-2 text-[15px] font-medium hover:border-terra/60 hover:bg-terra-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terra/40"
+          >
+            <span className="min-w-0">
+              <span className="block">{l.site}</span>
+              {l.note && <span className="block text-xs font-normal text-muted">{l.note}</span>}
+            </span>
+            <ExternalLink className="size-4 shrink-0 text-muted" aria-hidden />
+            <span className="sr-only">(abre em outra aba)</span>
+          </a>
+        </li>
+      ))}
+    </ul>
   )
 }

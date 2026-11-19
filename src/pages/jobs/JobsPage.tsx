@@ -9,7 +9,8 @@ import { Card } from '@/components/ui/card'
 import { LoadingCards } from '@/components/ui/skeleton'
 import { showAiError } from '@/lib/ai'
 import { countryInfo, type CountryCode } from '@/lib/paises'
-import { useProfile } from '@/lib/profile'
+import { detectAreas } from '@/lib/area-sites'
+import { registryLine, useProfile } from '@/lib/profile'
 import { useDestinations } from '@/lib/queries/destinations'
 import { rankScore, runJobSearch, SOURCE_LABEL, useLastSearch, useSuggestedJobs } from '@/lib/queries/jobs'
 import { usePreferences } from '@/lib/queries/preferences'
@@ -54,6 +55,23 @@ export function JobsPage() {
   // destinos com vagas, na ordem de preferência (e os que não estão mais na lista no fim)
   const chipDests = [...dests, ...Object.keys(counts).filter((c) => !dests.includes(c as CountryCode))] as CountryCode[]
 
+  // vagas que vieram das fontes automáticas (sem as de exemplo nem as que a pessoa trouxe)
+  const automatic = ranked.filter((j) => !['exemplo', 'manual', 'link'].includes(j.source) && !j.match_notes?.exemplo).length
+  const registry = registryLine(profile)
+  const areas = detectAreas([...roles, registry])
+  // poucas vagas automáticas: os sites da área vão para o topo, em destaque
+  const highlightSites = !isLoading && automatic < 5
+  const smartSearch = (
+    <SmartSearch
+      roles={roles}
+      destinations={dests}
+      city={prefs?.cities?.[0] ?? profile?.city ?? null}
+      workModes={(prefs?.work_modes ?? []) as WorkMode[]}
+      areas={areas}
+      registry={registry}
+      highlight={highlightSites}
+    />
+  )
   async function search() {
     setBusy(true)
     try {
@@ -103,6 +121,8 @@ export function JobsPage() {
             </Button>
           </Card>
 
+          {highlightSites && smartSearch}
+
           {ranked.length > 0 && (
             <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="group" aria-label="Filtrar por destino">
               <div className="flex w-max gap-2 pb-1">
@@ -140,12 +160,8 @@ export function JobsPage() {
             </ul>
           )}
 
-          <SmartSearch
-            roles={roles}
-            destinations={dests}
-            city={prefs?.cities?.[0] ?? profile?.city ?? null}
-            workModes={(prefs?.work_modes ?? []) as WorkMode[]}
-          />
+          {!highlightSites && smartSearch}
+
         </>
       )}
     </div>
