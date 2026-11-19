@@ -134,7 +134,7 @@ export function StyleGuidePage() {
                   type="email"
                   inputMode="email"
                   autoComplete="email"
-                  placeholder="voce@exemplo.com"
+                  placeholder="voce@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />

@@ -9,10 +9,10 @@ describe('botão de favoritos', () => {
   })
 
   it('o favorito leva ao endereço do app certo e cabe num favorito', () => {
-    const href = bookmarkletHref('https://exemplo.github.io/vagapronta/')
+    const href = bookmarkletHref('https://app.example.org/vagapronta/')
     expect(href.startsWith('javascript:')).toBe(true)
     const code = decodeURIComponent(href.slice('javascript:'.length))
-    expect(code).toContain('("https://exemplo.github.io/vagapronta/")')
+    expect(code).toContain('("https://app.example.org/vagapronta/")')
     expect(href.length).toBeLessThan(20000)
   })
 

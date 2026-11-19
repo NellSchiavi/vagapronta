@@ -10,6 +10,7 @@ import { countryInfo, type CountryCode } from '@/lib/paises'
 import { areaLinks, type Area } from '@/lib/area-sites'
 import { smartLinks, type SmartLink } from '@/lib/smart-search'
 import type { WorkMode } from '@/lib/types'
+import { linkHost, safeHttpUrl } from '@/lib/safe-link'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -86,7 +87,7 @@ export function SmartSearch({ roles, destinations, city, workModes, areas = [], 
       <div className="mt-5 space-y-5">
         {destinations.map((dest, i) => {
           const links = smartLinks(dest, { role, city, workModes })
-          const area = areaLinks(dest, areas, { registry })
+          const area = areaLinks(dest, areas, { registry, role })
           if (!links.length && !area.length) return null
           return (
             <section key={dest} aria-label={`Sites para ${countryInfo(dest).name}`}>
@@ -139,23 +140,30 @@ export function SmartSearch({ roles, destinations, city, workModes, areas = [], 
 function SiteList({ links }: { links: SmartLink[] }) {
   return (
     <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-      {links.map((l) => (
-        <li key={l.url}>
-          <a
-            href={l.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex min-h-touch items-center justify-between gap-3 rounded-field border border-line-strong bg-card px-3.5 py-2 text-[15px] font-medium hover:border-terra/60 hover:bg-terra-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terra/40"
-          >
-            <span className="min-w-0">
-              <span className="block">{l.site}</span>
-              {l.note && <span className="block text-xs font-normal text-muted">{l.note}</span>}
-            </span>
-            <ExternalLink className="size-4 shrink-0 text-muted" aria-hidden />
-            <span className="sr-only">(abre em outra aba)</span>
-          </a>
-        </li>
-      ))}
+      {links.map((l) => {
+        const url = safeHttpUrl(l.url)
+        if (!url) return null
+        const host = linkHost(url)
+        return (
+          <li key={l.site + url}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Abrir em ${host}`}
+              className="flex min-h-touch items-center justify-between gap-3 rounded-field border border-line-strong bg-card px-3.5 py-2 text-[15px] font-medium hover:border-terra/60 hover:bg-terra-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terra/40"
+            >
+              <span className="min-w-0">
+                <span className="block">{l.site}</span>
+                <span className="block text-xs font-normal text-muted [overflow-wrap:anywhere]">{[l.note, host].filter(Boolean).join(' · ')}</span>
+                {l.hint && <span className="mt-0.5 block text-xs font-medium text-terra-strong">{l.hint}</span>}
+              </span>
+              <ExternalLink className="size-4 shrink-0 text-muted" aria-hidden />
+              <span className="sr-only">(abre em outra aba, em {host})</span>
+            </a>
+          </li>
+        )
+      })}
     </ul>
   )
 }

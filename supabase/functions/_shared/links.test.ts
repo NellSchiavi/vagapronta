@@ -32,13 +32,13 @@ describe('limpeza de links de vaga', () => {
   })
 
   it('outros sites: tira utm_, gclid, fbclid e tokens, mantém o que identifica a vaga', () => {
-    expect(cleanJobUrl('https://empresa.gupy.io/jobs/1234567?jobBoardSource=gupy_portal&utm_source=email&utm_campaign=x&gclid=abc')).toBe(
-      'https://empresa.gupy.io/jobs/1234567?jobBoardSource=gupy_portal',
+    expect(cleanJobUrl('https://vagas.example.com/jobs/1234567?jobBoardSource=gupy_portal&utm_source=email&utm_campaign=x&gclid=abc')).toBe(
+      'https://vagas.example.com/jobs/1234567?jobBoardSource=gupy_portal',
     )
     expect(cleanJobUrl('https://www.net-empregos.com/123456/biomedica/?fbclid=IwAR0&token=segredo#access_token=abc')).toBe(
       'https://www.net-empregos.com/123456/biomedica/',
     )
-    expect(cleanJobUrl('https://site.com/#/vaga/123')).toBe('https://site.com/#/vaga/123')
+    expect(cleanJobUrl('https://example.org/#/vaga/123')).toBe('https://example.org/#/vaga/123')
   })
 
   it('texto que não é link volta como está', () => {
@@ -55,7 +55,7 @@ describe('sites que não deixam ler a vaga', () => {
     expect(blockedSite('https://www.glassdoor.com.br/job-listing/x')?.name).toBe('Glassdoor')
   })
   it('Gupy e outros sites: tenta ler', () => {
-    expect(blockedSite('https://empresa.gupy.io/jobs/1')).toBeNull()
-    expect(blockedSite('https://notlinkedin.com.evil.io/jobs/view/1')).toBeNull()
+    expect(blockedSite('https://vagas.example.com/jobs/1')).toBeNull()
+    expect(blockedSite('https://notlinkedin.com.example.invalid/jobs/view/1')).toBeNull()
   })
 })

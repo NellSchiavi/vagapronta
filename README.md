@@ -67,8 +67,8 @@ O arquivo `supabase/seed.sql` cria dois usuários com as telas já preenchidas (
 
 | Usuário | E-mail | Perfil |
 | --- | --- | --- |
-| Nelson | `nelson@exemplo.com` | Desenvolvedor front-end |
-| Esposa | `esposa@exemplo.com` | Analista de RH |
+| Nelson | `nelson@example.com` | Desenvolvedor front-end |
+| Esposa | `esposa@example.com` | Analista de RH |
 
 Para entrar com um deles, clique em **Entrar com e-mail**, digite o e-mail acima e abra a mensagem em http://127.0.0.1:54324 (clique no botão ou digite o código).
 
@@ -182,7 +182,7 @@ O envio de e-mails que vem com o Supabase é só para testes. Ele manda **poucos
 
 #### Opção B: Resend (plano grátis, exige um domínio seu)
 
-O Resend é um serviço de e-mail com plano grátis de 3.000 e-mails por mês. **Atenção:** para enviar a outras pessoas, ele exige que você tenha um **domínio próprio** (por exemplo, `seusite.com.br`). Sem domínio, ele só envia para o seu próprio e-mail. Nesse caso, use a opção A.
+O Resend é um serviço de e-mail com plano grátis de 3.000 e-mails por mês. **Atenção:** para enviar a outras pessoas, ele exige que você tenha um **domínio próprio**. Sem domínio, ele só envia para o seu próprio e-mail. Nesse caso, use a opção A.
 
 1. Crie a conta em https://resend.com.
 2. Vá em **Domains → Add Domain**, digite seu domínio e copie os registros DNS que ele mostra (TXT e MX) para o painel onde o domínio foi comprado (Registro.br, Hostinger…). Espere o status ficar **Verified**.

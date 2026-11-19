@@ -3,7 +3,7 @@ import { assertSafeUrl, findJobPosting, htmlToText } from './fetch-job'
 
 describe('assertSafeUrl', () => {
   it('aceita links públicos http/https', () => {
-    expect(assertSafeUrl('https://empresa.gupy.io/jobs/123').hostname).toBe('empresa.gupy.io')
+    expect(assertSafeUrl('https://vagas.example.com/jobs/123').hostname).toBe('vagas.example.com')
   })
   it('recusa endereços internos, outras portas e protocolos', () => {
     for (const bad of [
@@ -14,7 +14,7 @@ describe('assertSafeUrl', () => {
       'http://172.20.1.1',
       'http://169.254.169.254/latest/meta-data',
       'file:///etc/passwd',
-      'https://site.com:8443/x',
+      'https://example.org:8443/x',
       'http://intranet/',
       'http://kong.internal/',
       'http://[::1]/',

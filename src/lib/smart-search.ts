@@ -11,6 +11,8 @@ export interface SmartLink {
   url: string
   /** observação curta, ex.: "grandes empresas" */
   note?: string
+  /** quando o site não aceita busca pelo endereço: "Procure por <cargo> nesta página" */
+  hint?: string
 }
 
 export interface SmartQuery {

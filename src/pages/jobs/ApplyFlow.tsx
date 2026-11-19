@@ -10,6 +10,7 @@ import { friendlyDataError } from '@/lib/errors'
 import { addApplicationForJob, markApplicationSent, useJobDocuments } from '@/lib/queries/applications'
 import { refreshJobs } from '@/lib/queries/jobs'
 import { clearPendingApply, getPendingApply, PENDING_EVENT, setPendingApply, shouldAsk, type PendingApply } from '@/lib/pending-apply'
+import { isExampleJob, linkHost, openExternal, safeHttpUrl } from '@/lib/safe-link'
 import type { Job } from '@/lib/types'
 import { useSender } from '@/pages/letters/letter-parts'
 
@@ -19,16 +20,17 @@ import { useSender } from '@/pages/letters/letter-parts'
  *  2. abre a página ORIGINAL da vaga em nova aba, onde a pessoa se inscreve;
  *  3. ao voltar, pergunta se ela se candidatou (ApplyReturnPrompt).
  */
-export function ApplyButton({ job }: { job: Pick<Job, 'id' | 'title' | 'company' | 'url'> }) {
+export function ApplyButton({ job }: { job: Pick<Job, 'id' | 'title' | 'company' | 'url' | 'source' | 'match_notes'> }) {
   const [open, setOpen] = useState(false)
-  if (!job.url) return null
+  const url = safeHttpUrl(job.url)
+  if (!url || isExampleJob(job)) return null
   return (
     <>
       <Button onClick={() => setOpen(true)}>
         <Send aria-hidden /> Me candidatar
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        {open && <ApplySheet job={job as ApplyJob} onDone={() => setOpen(false)} />}
+        {open && <ApplySheet job={{ id: job.id, title: job.title, company: job.company, url }} onDone={() => setOpen(false)} />}
       </Sheet>
     </>
   )
@@ -42,6 +44,7 @@ function ApplySheet({ job, onDone }: { job: ApplyJob; onDone: () => void }) {
   const [busy, setBusy] = useState<'curriculo' | 'carta' | null>(null)
   const [got, setGot] = useState<{ curriculo?: boolean; carta?: boolean }>({})
   const hasDocs = Boolean(docs?.resumeId || docs?.letterId)
+  const host = linkHost(job.url)
 
   async function download(kind: 'curriculo' | 'carta') {
     setBusy(kind)
@@ -59,7 +62,10 @@ function ApplySheet({ job, onDone }: { job: ApplyJob; onDone: () => void }) {
   function goToJob() {
     // abre já, ainda no toque (senão o navegador bloqueia a nova aba)
     const openedAt = Date.now()
-    window.open(job.url, '_blank', 'noopener,noreferrer')
+    if (!openExternal(job.url)) {
+      toast.error('Este link de vaga não parece seguro, então não abrimos.')
+      return
+    }
     onDone()
     // guarda na Preparação para não perder a vaga; a pessoa confirma o envio ao voltar
     addApplicationForJob({ jobId: job.id, resumeId: docs?.resumeId, letterId: docs?.letterId })
@@ -125,7 +131,9 @@ function ApplySheet({ job, onDone }: { job: ApplyJob; onDone: () => void }) {
       )}
       <p className="mt-5 flex items-start gap-2 text-[13px] text-muted">
         <ArrowUpRight className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-        A vaga abre em uma nova aba. Quando voltar aqui, perguntamos se você se candidatou.
+        <span>
+          A vaga abre em uma nova aba, em <strong className="font-medium text-ink/80 [overflow-wrap:anywhere]">{host}</strong>. Quando voltar aqui, perguntamos se você se candidatou.
+        </span>
       </p>
     </SheetContent>
   )

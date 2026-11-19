@@ -11,6 +11,7 @@ import { addDays, FOLLOW_UP_DAYS } from '@/lib/application-rules'
 import { downloadLetterById, downloadResumeById } from '@/lib/application-pdfs'
 import { toISODate } from '@/lib/dates'
 import { cleanJobUrl } from '@/lib/links'
+import { linkHost, safeHttpUrl } from '@/lib/safe-link'
 import { friendlyDataError } from '@/lib/errors'
 import { useLetters } from '@/lib/queries/letters'
 import { useResumes } from '@/lib/queries/resumes'
@@ -79,6 +80,7 @@ export function ApplicationSheet({ open, onOpenChange, row, initial, focusFollow
   const sender = useSender()
   const [draft, setDraft] = useState<DraftApplication>(empty)
   const [errors, setErrors] = useState<Partial<Record<keyof DraftApplication, string>>>({})
+  const safeUrl = /^https?:\/\/\S+\.\S+/i.test(draft.url.trim()) ? safeHttpUrl(cleanJobUrl(draft.url.trim())) : null
   const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
@@ -227,14 +229,14 @@ export function ApplicationSheet({ open, onOpenChange, row, initial, focusFollow
             <Field label="Link da vaga" htmlFor="app-url" error={errors.url}>
               <Input type="url" inputMode="url" value={draft.url} onChange={(e) => set('url', e.target.value)} placeholder="https://…" />
             </Field>
-            {draft.url && /^https?:\/\/\S+\.\S+/.test(draft.url) && (
+            {safeUrl && (
               <a
-                href={draft.url}
+                href={safeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-1 inline-flex min-h-touch items-center gap-1.5 text-sm font-medium text-terra-strong underline-offset-[3px] hover:underline"
+                className="mt-1 inline-flex min-h-touch items-center gap-1.5 text-sm font-medium text-terra-strong underline-offset-[3px] [overflow-wrap:anywhere] hover:underline"
               >
-                <ExternalLink className="size-4" aria-hidden /> Abrir o anúncio da vaga
+                <ExternalLink className="size-4 shrink-0" aria-hidden /> Abrir o anúncio em {linkHost(safeUrl)}
               </a>
             )}
           </div>

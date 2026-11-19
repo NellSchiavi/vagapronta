@@ -2,8 +2,8 @@
 -- VagaPronta · dados de exemplo (SÓ PARA O AMBIENTE LOCAL)
 --
 -- Cria dois usuários com telas preenchidas:
---   nelson@exemplo.com   (desenvolvedor front-end)
---   esposa@exemplo.com   (biomédica)
+--   nelson@example.com   (desenvolvedor front-end)
+--   esposa@example.com   (biomédica)
 -- Empresas, pessoas e números são FICTÍCIOS.
 -- Para entrar: tela de login → "Entrar com e-mail" → abra o e-mail em
 -- http://127.0.0.1:54324 e clique no link (ou digite o código).
@@ -25,17 +25,17 @@ insert into auth.users (
   confirmation_token, recovery_token, email_change, email_change_token_new
 ) values
   ('00000000-0000-0000-0000-000000000000', '5eed0000-0000-4000-8000-00000000000a', 'authenticated', 'authenticated',
-   'nelson@exemplo.com', '', now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Nelson"}',
+   'nelson@example.com', '', now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Nelson"}',
    now() - interval '30 days', now(), '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '5eed0000-0000-4000-8000-00000000000b', 'authenticated', 'authenticated',
-   'esposa@exemplo.com', '', now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Esposa"}',
+   'esposa@example.com', '', now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Esposa"}',
    now() - interval '30 days', now(), '', '', '', '');
 
 insert into auth.identities (id, user_id, provider_id, provider, identity_data, last_sign_in_at, created_at, updated_at) values
   (gen_random_uuid(), '5eed0000-0000-4000-8000-00000000000a', '5eed0000-0000-4000-8000-00000000000a', 'email',
-   '{"sub":"5eed0000-0000-4000-8000-00000000000a","email":"nelson@exemplo.com","email_verified":true}', now(), now(), now()),
+   '{"sub":"5eed0000-0000-4000-8000-00000000000a","email":"nelson@example.com","email_verified":true}', now(), now(), now()),
   (gen_random_uuid(), '5eed0000-0000-4000-8000-00000000000b', '5eed0000-0000-4000-8000-00000000000b', 'email',
-   '{"sub":"5eed0000-0000-4000-8000-00000000000b","email":"esposa@exemplo.com","email_verified":true}', now(), now(), now());
+   '{"sub":"5eed0000-0000-4000-8000-00000000000b","email":"esposa@example.com","email_verified":true}', now(), now(), now());
 
 -- Nelson: TI (dados, IA e desenvolvimento), SEM conselho profissional.
 -- Sem modalidade definida de propósito: mostra o "Complete seu perfil" no Início.
@@ -45,8 +45,8 @@ update public.profiles set
   resume_country = 'BR',
   onboarded_at = now() - interval '30 days',
   career_stage = 'na_area',
-  linkedin_url = 'linkedin.com/in/exemplo-nelson',
-  links = '[{"rotulo":"GitHub","url":"https://github.com/exemplo-nelson"}]',
+  linkedin_url = null,
+  links = '[{"rotulo":"Portfólio","url":"https://portfolio.example.com/nelson"}]',
   certifications = '[{"nome":"Certificação em fundamentos de nuvem (exemplo)","emissor":"Provedor de Nuvem Exemplo","validade":"2027-03"},{"nome":"Curso de Machine Learning","emissor":"Plataforma de Cursos Exemplo","validade":null}]'
 where user_id = '5eed0000-0000-4000-8000-00000000000a';
 
@@ -72,8 +72,8 @@ update public.profiles set
   onboarded_at = now() - interval '30 days',
   career_stage = 'na_area',
   phone = '(11) 99999-0000',
-  contact_email = 'esposa@exemplo.com',
-  linkedin_url = 'linkedin.com/in/exemplo-biomedica',
+  contact_email = 'esposa@example.com',
+  linkedin_url = null,
   registry_council = 'CRBM',
   registry_number = '00000',
   registry_region = '1ª Região (SP)',
@@ -101,27 +101,27 @@ where user_id = '5eed0000-0000-4000-8000-00000000000b';
 -- Vagas
 insert into public.jobs (id, user_id, source, external_id, title, company, location, work_mode, url, description, salary, compatibility, match_notes, status, published_at, created_at) values
   ('5eed0000-0000-4000-8000-0000000b0101', '5eed0000-0000-4000-8000-00000000000b', 'adzuna', 'demo-b-1',
-   'Biomédico(a) — Análises Clínicas', 'Laboratório Diagnóstico Alfa', 'São Paulo, SP', 'presencial', 'https://exemplo.com/vagas/alfa-biomedico',
+   'Biomédico(a) — Análises Clínicas', 'Laboratório Diagnóstico Alfa', 'São Paulo, SP', 'presencial', null,
    E'Buscamos biomédico(a) para o setor técnico de análises clínicas.\n\nResponsabilidades\n• Realizar e liberar exames de bioquímica, hematologia e imunologia\n• Executar o controle de qualidade interno (regras de Westgard) e participar do controle externo\n• Conferir laudos no sistema LIS e tratar valores críticos\n• Apoiar a coleta em dias de maior movimento\n\nRequisitos\n• Graduação em Biomedicina com habilitação em Análises Clínicas e registro ativo no CRBM\n• Experiência com automação em bioquímica e hematologia\n• Desejável: especialização em análises clínicas',
    'R$ 4.800 a R$ 5.500', 89, '{"pontos_fortes":["Bioquímica e hematologia","Controle de qualidade"],"lacunas":["Imunologia"]}', 'nova', now() - interval '6 hours', now() - interval '2 hours'),
   ('5eed0000-0000-4000-8000-0000000b0102', '5eed0000-0000-4000-8000-00000000000b', 'adzuna', 'demo-b-2',
-   'Analista de Controle de Qualidade Microbiológico', 'Indústria Farmacêutica Beta', 'Guarulhos, SP', 'presencial', 'https://exemplo.com/vagas/beta-cq-micro',
+   'Analista de Controle de Qualidade Microbiológico', 'Indústria Farmacêutica Beta', 'Guarulhos, SP', 'presencial', null,
    E'Sobre a vaga\nVocê vai garantir a qualidade microbiológica de medicamentos e do ambiente produtivo, seguindo as Boas Práticas de Fabricação.\n\nResponsabilidades\n• Realizar análises microbiológicas de matérias-primas, água purificada e produto acabado\n• Fazer o monitoramento ambiental de áreas limpas\n• Registrar resultados e abrir desvios quando necessário\n• Preparar meios de cultura e controlar cepas de referência\n\nRequisitos\n• Formação em Biomedicina, Farmácia ou Biologia\n• Experiência em laboratório de microbiologia\n• Conhecimento de Boas Práticas (BPF/BPL)\n\nDiferenciais\n• Vivência em indústria farmacêutica ou de alimentos\n• Inglês intermediário para leitura de procedimentos',
    'R$ 5.200', 91, '{"pontos_fortes":["Microbiologia","Rotina de laboratório"],"lacunas":["Boas Práticas de Fabricação"]}', 'nova', now() - interval '8 hours', now() - interval '2 hours'),
   ('5eed0000-0000-4000-8000-0000000b0103', '5eed0000-0000-4000-8000-00000000000b', 'adzuna', 'demo-b-3',
-   'Biomédico(a) de Banco de Sangue', 'Hemocentro Regional Exemplo', 'São Paulo, SP', 'presencial', 'https://exemplo.com/vagas/hemocentro',
+   'Biomédico(a) de Banco de Sangue', 'Hemocentro Regional Exemplo', 'São Paulo, SP', 'presencial', null,
    E'Atuação no setor de imuno-hematologia: tipagem ABO/Rh, pesquisa de anticorpos irregulares, provas de compatibilidade e liberação de hemocomponentes. Escala 12x36. Requisitos: registro no CRBM e habilitação em banco de sangue ou experiência na área.',
    null, 87, '{"pontos_fortes":["Banco de sangue"],"lacunas":["Experiência em hemocentro"]}', 'nova', now() - interval '10 hours', now() - interval '2 hours'),
   ('5eed0000-0000-4000-8000-0000000b0104', '5eed0000-0000-4000-8000-00000000000b', 'remotive', 'demo-b-4',
-   'Clinical Data Coordinator (LATAM)', 'Remote Health Research', 'América Latina', 'remoto', 'https://exemplo.com/vagas/clinical-data',
+   'Clinical Data Coordinator (LATAM)', 'Remote Health Research', 'América Latina', 'remoto', null,
    'Support clinical research studies: data entry review, query management and documentation following GCP. Life sciences degree required. Intermediate English.',
    'US$ 1.900', 72, '{"pontos_fortes":["Formação em ciências da vida"],"lacunas":["Boas Práticas Clínicas (GCP)","Inglês avançado"]}', 'nova', now() - interval '1 day', now() - interval '1 day'),
   ('5eed0000-0000-4000-8000-0000000b0105', '5eed0000-0000-4000-8000-00000000000b', 'adzuna', 'demo-b-5',
-   'Biomédico(a) de Imagenologia', 'Clínica Imagem Mais', 'São Paulo, SP', 'hibrido', 'https://exemplo.com/vagas/imagem-mais',
+   'Biomédico(a) de Imagenologia', 'Clínica Imagem Mais', 'São Paulo, SP', 'hibrido', null,
    'Apoio a exames de ressonância e tomografia, preparo de pacientes e controle de agenda técnica. Habilitação em imagenologia desejável.',
    'R$ 5.000', 78, '{"pontos_fortes":["Atendimento a pacientes"],"lacunas":["Habilitação em imagenologia"]}', 'salva', now() - interval '9 days', now() - interval '9 days'),
   ('5eed0000-0000-4000-8000-0000000b0106', '5eed0000-0000-4000-8000-00000000000b', 'adzuna', 'demo-b-6',
-   'Coordenador(a) de Laboratório', 'Hospital Grande Exemplo', 'São Paulo, SP', 'presencial', 'https://exemplo.com/vagas/coord-lab',
+   'Coordenador(a) de Laboratório', 'Hospital Grande Exemplo', 'São Paulo, SP', 'presencial', null,
    'Gestão da equipe técnica do laboratório hospitalar, indicadores e acreditação. Exige 5 anos de experiência e liderança.',
    null, 61, '{"pontos_fortes":[],"lacunas":["Experiência em liderança","5 anos de experiência"]}', 'descartada', now() - interval '5 days', now() - interval '5 days');
 
@@ -131,7 +131,7 @@ insert into public.resumes (id, user_id, title, template, country, source, is_pr
    $json${
      "raw_text": "Esposa · Biomédica · CRBM 00000 · São Paulo, SP\nBiomédica no Laboratório Vida Diagnósticos (2021–atual)...",
      "sections": {
-       "contato": { "email": "esposa@exemplo.com", "telefone": "(11) 99999-0000", "cidade": "São Paulo, SP" },
+       "contato": { "email": "esposa@example.com", "telefone": "(11) 99999-0000", "cidade": "São Paulo, SP" },
        "resumo": "Biomédica com habilitação em análises clínicas e 4 anos de experiência em laboratório, atuando em bioquímica, hematologia e coleta. Cuidadosa com biossegurança e com o controle de qualidade dos resultados.",
        "experiencias": [
          { "cargo": "Biomédica", "empresa": "Laboratório Vida Diagnósticos", "local": "São Paulo, SP", "inicio": "2021-03", "fim": null,
@@ -152,7 +152,7 @@ insert into public.resumes (id, user_id, title, template, country, source, is_pr
    $json${
      "raw_text": "",
      "sections": {
-       "contato": { "email": "esposa@exemplo.com", "telefone": "(11) 99999-0000", "cidade": "São Paulo, SP" },
+       "contato": { "email": "esposa@example.com", "telefone": "(11) 99999-0000", "cidade": "São Paulo, SP" },
        "resumo": "Biomédica com habilitação em análises clínicas, registro ativo no CRBM e 4 anos de rotina em bioquímica e hematologia automatizadas. Experiência com controle de qualidade interno (regras de Westgard), liberação de laudos no sistema LIS e apoio à coleta.",
        "experiencias": [
          { "cargo": "Biomédica", "empresa": "Laboratório Vida Diagnósticos", "local": "São Paulo, SP", "inicio": "2021-03", "fim": null,
@@ -207,16 +207,16 @@ Esposa$txt$, now() - interval '1 day');
 -- Candidaturas
 insert into public.applications (user_id, job_id, resume_id, cover_letter_id, company, role, url, status, applied_on, notes, follow_up_on, position, created_at) values
   ('5eed0000-0000-4000-8000-00000000000b', '5eed0000-0000-4000-8000-0000000b0101', '5eed0000-0000-4000-8000-0000000b0202', '5eed0000-0000-4000-8000-0000000b0301',
-   'Laboratório Diagnóstico Alfa', 'Biomédico(a) — Análises Clínicas', 'https://exemplo.com/vagas/alfa-biomedico', 'preparacao', null,
+   'Laboratório Diagnóstico Alfa', 'Biomédico(a) — Análises Clínicas', null, 'preparacao', null,
    'Revisar a carta antes de enviar.', null, 0, now() - interval '1 day'),
   ('5eed0000-0000-4000-8000-00000000000b', '5eed0000-0000-4000-8000-0000000b0105', '5eed0000-0000-4000-8000-0000000b0201', null,
-   'Clínica Imagem Mais', 'Biomédico(a) de Imagenologia', 'https://exemplo.com/vagas/imagem-mais', 'enviada', current_date - 7,
+   'Clínica Imagem Mais', 'Biomédico(a) de Imagenologia', null, 'enviada', current_date - 7,
    'Candidatura pelo site da clínica.', current_date + 2, 0, now() - interval '7 days'),
   ('5eed0000-0000-4000-8000-00000000000b', null, '5eed0000-0000-4000-8000-0000000b0201', null,
-   'Hospital Santa Luzia Exemplo', 'Biomédico(a) Plantonista', 'https://exemplo.com/vagas/santa-luzia', 'enviada', current_date - 5,
+   'Hospital Santa Luzia Exemplo', 'Biomédico(a) Plantonista', null, 'enviada', current_date - 5,
    null, current_date + 4, 1, now() - interval '5 days'),
   ('5eed0000-0000-4000-8000-00000000000b', null, '5eed0000-0000-4000-8000-0000000b0201', null,
-   'Laboratório Gama Exemplo', 'Biomédico(a) — Coleta e Triagem', 'https://exemplo.com/vagas/gama', 'entrevista', current_date - 14,
+   'Laboratório Gama Exemplo', 'Biomédico(a) — Coleta e Triagem', null, 'entrevista', current_date - 14,
    'Entrevista técnica na quinta, às 14h. Revisar hematologia e controle de qualidade.', current_date + 3, 0, now() - interval '14 days'),
   ('5eed0000-0000-4000-8000-00000000000b', null, '5eed0000-0000-4000-8000-0000000b0201', null,
    'Clínica Bem Estar Exemplo', 'Técnico(a) de Laboratório', null, 'recusada', current_date - 27,
@@ -231,19 +231,19 @@ insert into public.ai_usage (user_id, day, calls, by_feature) values
 
 insert into public.jobs (id, user_id, source, external_id, title, company, location, work_mode, url, description, salary, compatibility, match_notes, status, published_at, created_at) values
   ('5eed0000-0000-4000-8000-0000000a0101', '5eed0000-0000-4000-8000-00000000000a', 'adzuna', 'demo-a-1',
-   'Engenheiro(a) de Dados Pleno', 'Fintech Exemplo', 'São Paulo, SP', 'remoto', 'https://exemplo.com/vagas/fintech-dados',
+   'Engenheiro(a) de Dados Pleno', 'Fintech Exemplo', 'São Paulo, SP', 'remoto', null,
    E'Construir e manter pipelines de dados em Python e SQL, modelar dados no data warehouse e orquestrar rotinas com Airflow.\n\nRequisitos\n• Python e SQL avançado\n• Experiência com nuvem (AWS ou GCP)\n• Desejável: dbt e Spark',
    'R$ 12.000', 86, '{"pontos_fortes":["Python","SQL"],"lacunas":["Airflow","dbt"]}', 'nova', now() - interval '5 hours', now() - interval '3 hours'),
   ('5eed0000-0000-4000-8000-0000000a0102', '5eed0000-0000-4000-8000-00000000000a', 'remotive', 'demo-a-2',
-   'Machine Learning Engineer', 'Remote AI Company Exemplo', 'Qualquer lugar', 'remoto', 'https://exemplo.com/vagas/ml-engineer',
+   'Machine Learning Engineer', 'Remote AI Company Exemplo', 'Qualquer lugar', 'remoto', null,
    'Deploy and monitor ML models in production, build feature pipelines and APIs. Python, Docker and cloud experience. Fluent English.',
    null, 74, '{"pontos_fortes":["Python","APIs"],"lacunas":["MLOps","Inglês fluente"]}', 'nova', now() - interval '20 hours', now() - interval '3 hours'),
   ('5eed0000-0000-4000-8000-0000000a0103', '5eed0000-0000-4000-8000-00000000000a', 'adzuna', 'demo-a-3',
-   'Analista de Dados', 'Varejo Exemplo', 'São Paulo, SP', 'hibrido', 'https://exemplo.com/vagas/analista-dados',
+   'Analista de Dados', 'Varejo Exemplo', 'São Paulo, SP', 'hibrido', null,
    'Construção de dashboards em Power BI, análises em SQL e apoio às áreas de negócio.',
    null, 68, '{"pontos_fortes":["SQL"],"lacunas":["Power BI"]}', 'nova', now() - interval '1 day', now() - interval '1 day'),
   ('5eed0000-0000-4000-8000-0000000a0104', '5eed0000-0000-4000-8000-00000000000a', 'adzuna', 'demo-a-4',
-   'Desenvolvedor(a) Python', 'Pagamentos Exemplo', 'Rio de Janeiro, RJ', 'hibrido', 'https://exemplo.com/vagas/pagamentos-python',
+   'Desenvolvedor(a) Python', 'Pagamentos Exemplo', 'Rio de Janeiro, RJ', 'hibrido', null,
    'APIs em Python (FastAPI), integração com bancos de dados e testes automatizados.',
    'R$ 10.500', 81, '{"pontos_fortes":["Python","APIs"],"lacunas":[]}', 'salva', now() - interval '8 days', now() - interval '8 days');
 
@@ -252,7 +252,7 @@ insert into public.resumes (id, user_id, title, template, country, source, is_pr
    $json${
      "raw_text": "Nelson · Engenheiro de Dados · São Paulo, SP\n...",
      "sections": {
-       "contato": { "email": "nelson@exemplo.com", "cidade": "São Paulo, SP", "linkedin": "linkedin.com/in/exemplo-nelson" },
+       "contato": { "email": "nelson@example.com", "cidade": "São Paulo, SP" },
        "resumo": "Profissional de tecnologia com experiência em desenvolvimento web e dados, criando aplicações com Python, SQL, React e TypeScript.",
        "experiencias": [
          { "cargo": "Desenvolvedor e analista de dados (autônomo)", "empresa": "NS Soluções Digitais", "local": "Remoto", "inicio": "2022-01", "fim": null,
@@ -293,10 +293,10 @@ Nelson$txt$, now() - interval '8 days');
 
 insert into public.applications (user_id, job_id, resume_id, cover_letter_id, company, role, url, status, applied_on, notes, follow_up_on, position, created_at) values
   ('5eed0000-0000-4000-8000-00000000000a', '5eed0000-0000-4000-8000-0000000a0101', '5eed0000-0000-4000-8000-0000000a0201', null,
-   'Fintech Exemplo', 'Engenheiro(a) de Dados Pleno', 'https://exemplo.com/vagas/fintech-dados', 'preparacao', null,
+   'Fintech Exemplo', 'Engenheiro(a) de Dados Pleno', null, 'preparacao', null,
    'Adaptar o currículo destacando pipelines de dados.', null, 0, now() - interval '1 day'),
   ('5eed0000-0000-4000-8000-00000000000a', '5eed0000-0000-4000-8000-0000000a0104', '5eed0000-0000-4000-8000-0000000a0201', '5eed0000-0000-4000-8000-0000000a0301',
-   'Pagamentos Exemplo', 'Desenvolvedor(a) Python', 'https://exemplo.com/vagas/pagamentos-python', 'enviada', current_date - 8,
+   'Pagamentos Exemplo', 'Desenvolvedor(a) Python', null, 'enviada', current_date - 8,
    'Mandar mensagem para a recrutadora perguntando sobre o andamento.', current_date - 1, 0, now() - interval '8 days'),
   ('5eed0000-0000-4000-8000-00000000000a', null, '5eed0000-0000-4000-8000-0000000a0201', null,
    'Logística Exemplo', 'Analista de Dados', null, 'entrevista', current_date - 16,
@@ -317,11 +317,11 @@ update public.jobs set source = 'exemplo', destination = 'BR', country = 'BR' wh
 insert into public.jobs (user_id, source, external_id, title, company, location, country, destination, work_mode, url, description,
   compatibility, match_notes, status, published_at, language_required, visa_sponsorship, remote_from_brazil) values
   ('5eed0000-0000-4000-8000-00000000000b', 'exemplo', 'demo-b-pt-1', 'Técnica(o) Superior de Análises Clínicas', 'Clínica Exemplo do Porto', 'Porto', 'PT', 'PT', 'presencial',
-   'https://exemplo.com/vagas/porto-analises', 'Laboratório de análises clínicas no Porto procura profissional para hematologia e bioquímica, com controle de qualidade interno e registo de resultados. Requisito: reconhecimento do diploma em Portugal.',
+   null, 'Laboratório de análises clínicas no Porto procura profissional para hematologia e bioquímica, com controle de qualidade interno e registo de resultados. Requisito: reconhecimento do diploma em Portugal.',
    74, '{"estimada": true, "termos": ["hematologia", "bioquimica", "qualidade"]}', 'nova', now() - interval '1 day', null, null, null),
   ('5eed0000-0000-4000-8000-00000000000a', 'exemplo', 'demo-a-eu-1', 'Data Engineer (m/w/d)', 'Exemplo Analytics GmbH', 'Berlin', 'DE', 'EU', 'hibrido',
-   'https://exemplo.com/vagas/berlin-data', 'We build data pipelines with Python, SQL and Airflow. Fluent German (C1) is required for client meetings. We offer visa sponsorship and relocation support.',
+   null, 'We build data pipelines with Python, SQL and Airflow. Fluent German (C1) is required for client meetings. We offer visa sponsorship and relocation support.',
    81, '{"estimada": true, "termos": ["python", "sql", "airflow"]}', 'nova', now() - interval '2 days', 'de', true, null),
   ('5eed0000-0000-4000-8000-00000000000a', 'exemplo', 'demo-a-us-1', 'Senior Data Analyst', 'Exemplo Health Inc.', 'Americas, Brazil', 'US', 'US', 'remoto',
-   'https://exemplo.com/vagas/us-analyst', 'Remote role open to candidates in the Americas, including Brazil. SQL, Python and dashboards. English required for daily meetings.',
+   null, 'Remote role open to candidates in the Americas, including Brazil. SQL, Python and dashboards. English required for daily meetings.',
    77, '{"estimada": true, "termos": ["sql", "python", "dashboards"]}', 'nova', now() - interval '1 day', 'en', null, true);

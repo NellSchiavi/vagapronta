@@ -9,6 +9,7 @@ import { Field } from '@/components/ui/field'
 import { Input, Textarea } from '@/components/ui/input'
 import { clearAiTaskError, startAiTask, useAiTaskError } from '@/lib/ai-tasks'
 import { useAuth } from '@/lib/auth'
+import { safeHttpUrl } from '@/lib/safe-link'
 import { blockedSite, cleanJobUrl } from '@/lib/links'
 import { adaptResume, useJob } from '@/lib/queries/adapt'
 import type { Resume } from '@/lib/resume'
@@ -228,7 +229,7 @@ export function AdaptForm({ bases, defaultBaseId, jobId, initialUrl, initialText
               type="url"
               inputMode="url"
               autoComplete="off"
-              placeholder="https://www.exemplo.com/vaga/123"
+              placeholder="https://…"
               value={draft.url}
               onChange={(e) => setDraft((d) => ({ ...d, url: e.target.value }))}
               onBlur={() => cleanUrl && cleanUrl !== draft.url.trim() && setDraft((d) => ({ ...d, url: cleanUrl }))}
@@ -239,7 +240,7 @@ export function AdaptForm({ bases, defaultBaseId, jobId, initialUrl, initialText
               <Info className="mt-0.5 size-4 shrink-0 text-terra" aria-hidden />
               <div>
                 <p>{blocked.message}</p>
-                <a href={cleanUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 font-medium text-terra-strong underline underline-offset-2">
+                <a href={safeHttpUrl(cleanUrl) ?? undefined} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 font-medium text-terra-strong underline underline-offset-2">
                   Abrir a vaga no {blocked.name} <ArrowUpRight className="size-3.5" aria-hidden />
                 </a>
               </div>

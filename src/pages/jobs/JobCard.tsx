@@ -8,6 +8,7 @@ import { relativeDay } from '@/lib/dates'
 import { friendlyDataError } from '@/lib/errors'
 import { setJobStatus, SOURCE_LABEL } from '@/lib/queries/jobs'
 import { WORK_MODE_LABEL, type Job } from '@/lib/types'
+import { isExampleJob, linkHost, safeHttpUrl } from '@/lib/safe-link'
 import { cn } from '@/lib/utils'
 import { ApplyButton } from './ApplyFlow'
 
@@ -43,7 +44,10 @@ const TONE = {
 }
 
 export function JobCard({ job, priority }: { job: Job; priority: number | null }) {
-  const example = Boolean(job.match_notes?.exemplo)
+  const example = isExampleJob(job)
+  const url = example ? null : safeHttpUrl(job.url)
+  const host = linkHost(url)
+  const sourceUrl = safeHttpUrl(job.source_url)
   const warnings = jobWarnings(job)
   const source = SOURCE_LABEL[job.source] ?? job.source
   const where = [job.company, job.location].filter(Boolean).join(' · ')
@@ -74,6 +78,12 @@ export function JobCard({ job, priority }: { job: Job; priority: number | null }
         </Button>
       </div>
 
+      {example && (
+        <p className="mt-3 flex items-center gap-2 rounded-[10px] border border-warn/40 bg-warn-soft px-3 py-2 text-sm font-medium text-warn">
+          <FlaskConical className="size-4 shrink-0" aria-hidden /> Vaga de exemplo
+        </p>
+      )}
+
       <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
         {job.compatibility != null && <MatchPill value={job.compatibility} />}
         {job.destination && (
@@ -84,11 +94,6 @@ export function JobCard({ job, priority }: { job: Job; priority: number | null }
           </span>
         )}
         {job.work_mode && <span className="rounded-full bg-track px-2.5 py-1 font-medium text-ink/80">{WORK_MODE_LABEL[job.work_mode]}</span>}
-        {example && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-warn-soft px-2.5 py-1 font-medium text-warn">
-            <FlaskConical className="size-3" aria-hidden /> Vaga de exemplo
-          </span>
-        )}
       </div>
 
       {warnings.length > 0 && (
@@ -109,36 +114,43 @@ export function JobCard({ job, priority }: { job: Job; priority: number | null }
       ) : null}
       {job.salary && <p className="mt-1 text-[13px] text-muted">Salário: {job.salary}</p>}
 
-      <div className="mt-4 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
-        <ApplyButton job={job} />
-        <Button asChild variant={job.url ? 'secondary' : 'primary'}>
-          <Link to={`/adaptar?vaga=${job.id}`}>
-            <Sparkles aria-hidden /> Adaptar currículo
-          </Link>
-        </Button>
-        {job.url && (
-          <Button asChild variant="ghost">
-            <a href={job.url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink aria-hidden /> Ver vaga
-            </a>
+      {example ? (
+        <div className="mt-4 space-y-2">
+          <p className="rounded-[10px] bg-track px-3 py-2.5 text-sm text-ink/80">Esta vaga é só para testar o app.</p>
+          <Button asChild variant="secondary" className="w-full sm:w-auto">
+            <Link to={`/adaptar?vaga=${job.id}`}>
+              <Sparkles aria-hidden /> Testar Adaptar currículo
+            </Link>
           </Button>
-        )}
-      </div>
-      {job.url && (
-        <p className="mt-2 text-xs text-muted">
-          “Ver vaga” só abre o anúncio. “Me candidatar” prepara seus arquivos e abre o site da vaga para <strong className="font-medium text-ink/80">você</strong> se inscrever lá.
-        </p>
-      )}
-
-      <p className="mt-3 flex flex-wrap items-center gap-x-2 text-xs text-muted">
-        {example ? (
-          <span>Exemplo para testar a tela: a fonte com chave ainda não foi ligada.</span>
-        ) : (
-          <>
+        </div>
+      ) : (
+        <>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+            <ApplyButton job={job} />
+            <Button asChild variant={url ? 'secondary' : 'primary'}>
+              <Link to={`/adaptar?vaga=${job.id}`}>
+                <Sparkles aria-hidden /> Adaptar currículo
+              </Link>
+            </Button>
+            {url && (
+              <Button asChild variant="ghost">
+                <a href={url} target="_blank" rel="noopener noreferrer" title={`Abrir em ${host}`}>
+                  <ExternalLink aria-hidden /> Ver vaga
+                </a>
+              </Button>
+            )}
+          </div>
+          {url && (
+            <p className="mt-2 text-xs text-muted">
+              “Ver vaga” só abre o anúncio em <strong className="font-medium text-ink/80 [overflow-wrap:anywhere]">{host}</strong>. “Me candidatar” prepara
+              seus arquivos e abre o site da vaga para <strong className="font-medium text-ink/80">você</strong> se inscrever lá.
+            </p>
+          )}
+          <p className="mt-3 flex flex-wrap items-center gap-x-2 text-xs text-muted">
             <span>
               via{' '}
-              {job.source_url ? (
-                <a href={job.source_url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">
+              {sourceUrl ? (
+                <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">
                   {source}
                 </a>
               ) : (
@@ -147,9 +159,9 @@ export function JobCard({ job, priority }: { job: Job; priority: number | null }
             </span>
             {job.published_at && <span>· publicada {relativeDay(job.published_at.slice(0, 10))}</span>}
             {job.match_notes?.estimada && <span>· compatibilidade estimada</span>}
-          </>
-        )}
-      </p>
+          </p>
+        </>
+      )}
     </article>
   )
 }

@@ -4,7 +4,7 @@ import { redactPersonalData } from './privacy'
 const CV = `Maria Silva
 Analista de RH · São Paulo, SP
 maria.silva+cv@gmail.com | +55 (11) 98765-4321 | (11) 3333-4444
-linkedin.com/in/maria-silva-rh · https://maria.dev/portfolio
+linkedin.com/in/maria-silva-rh · https://maria.example/portfolio
 CPF: 123.456.789-09
 Rua das Flores, 123 - Apto 45 - Vila Mariana
 CEP 04012-000
@@ -26,7 +26,7 @@ describe('redactPersonalData', () => {
       '04012-000',
       'Rua das Flores',
       'linkedin.com/in/maria-silva-rh',
-      'https://maria.dev/portfolio',
+      'https://maria.example/portfolio',
     ]) {
       expect(r.text).not.toContain(secret)
     }

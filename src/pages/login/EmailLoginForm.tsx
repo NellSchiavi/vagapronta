@@ -63,7 +63,7 @@ export function EmailLoginForm({ defaultEmail = '', onBack, onSent }: Props) {
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
-          placeholder="voce@exemplo.com"
+          placeholder="voce@example.com"
           autoFocus
           className="min-h-[48px]"
           {...register('email')}
