@@ -48,6 +48,9 @@ async function getJson<T>(url: string, init: RequestInit = {}): Promise<T> {
   }
 }
 
+/** Tira chaves de API de mensagens de erro (ex.: jooble.org/api/<chave>) */
+export const hideKeys = (msg: string) => msg.replace(/(jooble\.org\/api\/)[^\s)"'?#]+/gi, '$1***')
+
 async function getJsonOnce<T>(url: string, init: RequestInit = {}): Promise<T> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
@@ -58,6 +61,9 @@ async function getJsonOnce<T>(url: string, init: RequestInit = {}): Promise<T> {
     ])
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     return (await res.json()) as T
+  } catch (err) {
+    // erros de rede trazem o endereço; o da Jooble tem a chave, que nunca vai para o log
+    throw new Error(hideKeys((err as Error).message))
   } finally {
     clearTimeout(timer)
   }
