@@ -21,7 +21,7 @@ export async function buildLetterPdf(data: LetterPdfData): Promise<Blob> {
 
   const s = StyleSheet.create({
     page: { paddingVertical: 56, paddingHorizontal: 60, fontFamily: 'Inter', fontSize: 10, color: C.ink },
-    name: { fontFamily: 'Fraunces', fontWeight: 500, fontSize: 24, letterSpacing: -0.3 },
+    name: { fontFamily: 'Fraunces', fontWeight: 500, fontSize: 24, lineHeight: 1.2, letterSpacing: -0.3 },
     role: { marginTop: 3, fontSize: 10.5, color: C.muted },
     contact: { marginTop: 6, fontSize: 9, color: C.muted },
     rule: { marginTop: 16, marginBottom: 22, height: 2, width: 48, backgroundColor: C.terra },
