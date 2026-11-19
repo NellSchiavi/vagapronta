@@ -5,6 +5,17 @@ export class PdfReadError extends Error {}
 
 export const MAX_PDF_BYTES = 10 * 1024 * 1024
 
+let pdfjsPromise: Promise<typeof import('pdfjs-dist')> | null = null
+
+/** pdf.js com o worker configurado (carregado uma vez, só quando precisa) */
+export function loadPdfjs() {
+  pdfjsPromise ??= Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')]).then(([pdfjs, worker]) => {
+    pdfjs.GlobalWorkerOptions.workerSrc = worker.default
+    return pdfjs
+  })
+  return pdfjsPromise
+}
+
 export async function extractPdfText(file: File): Promise<{ text: string; pages: number }> {
   if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
     throw new PdfReadError('Esse arquivo não é um PDF. Escolha um arquivo terminado em .pdf ou cole o texto.')
@@ -13,11 +24,7 @@ export async function extractPdfText(file: File): Promise<{ text: string; pages:
     throw new PdfReadError('Esse PDF passa de 10 MB. Tente exportar de novo, sem imagens, ou cole o texto.')
   }
 
-  const [pdfjs, worker] = await Promise.all([
-    import('pdfjs-dist'),
-    import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
-  ])
-  pdfjs.GlobalWorkerOptions.workerSrc = worker.default
+  const pdfjs = await loadPdfjs()
 
   try {
     const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise

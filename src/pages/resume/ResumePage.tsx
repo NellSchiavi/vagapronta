@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { FilePlus2, RefreshCw } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { FilePlus2, PenLine, RefreshCw } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { LoadingCards } from '@/components/ui/skeleton'
+import { shortDate } from '@/lib/dates'
 import { friendlyDataError } from '@/lib/errors'
 import { useResumes } from '@/lib/queries/resumes'
 import type { Resume } from '@/lib/resume'
@@ -24,12 +25,21 @@ export function ResumePage() {
     <div>
       <PageHeader
         title="Seu currículo"
-        description="Descubra a nota, veja o que melhorar e acompanhe a evolução."
+        description="Descubra a nota, veja o que melhorar, edite e escolha o modelo do PDF."
         actions={
           hasResumes && !uploading ? (
-            <Button variant="secondary" onClick={() => setUploading(true)}>
-              <FilePlus2 aria-hidden /> Enviar nova versão
-            </Button>
+            <>
+              {selected?.content.sections && (
+                <Button asChild>
+                  <Link to={`/curriculo/editar?id=${selected.id}`}>
+                    <PenLine aria-hidden /> Editar e escolher modelo
+                  </Link>
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => setUploading(true)}>
+                <FilePlus2 aria-hidden /> Enviar nova versão
+              </Button>
+            </>
           ) : undefined
         }
       />
@@ -79,7 +89,7 @@ function VersionSelect({ resumes, value, onChange }: { resumes: Resume[]; value:
         {resumes.map((r) => (
           <option key={r.id} value={r.id}>
             {r.title}
-            {r.is_principal ? ' (principal)' : r.job_id ? ' (adaptado para vaga)' : ''}
+            {r.is_principal ? ' (principal)' : r.job_id ? ' (adaptado para vaga)' : ''} · {shortDate(r.updated_at.slice(0, 10)).replace(/\.$/, '')}
           </option>
         ))}
       </select>

@@ -46,7 +46,7 @@ O login com LinkedIn só funciona depois de configurado (seção 4). Até lá, u
 
 ### IA no ambiente local
 
-As ações de IA (organizar e analisar o currículo, adaptar à vaga, cartas) rodam nas **Edge Functions** do Supabase, em `supabase/functions/`. Os secrets locais ficam em `supabase/functions/.env`. Esse arquivo não vai para o git, e o modelo dele é `supabase/functions/.env.example`.
+As ações de IA (organizar e analisar o currículo, "Melhorar com IA" no editor, adaptar à vaga, cartas) rodam nas **Edge Functions** do Supabase, em `supabase/functions/`. Os secrets locais ficam em `supabase/functions/.env`. Esse arquivo não vai para o git, e o modelo dele é `supabase/functions/.env.example`.
 
 - **Sem chave (modo de exemplo):** `AI_PROVIDER=mock`. As funções devolvem respostas de exemplo depois de um segundo. Serve para testar as telas sem gastar a cota.
 - **Com a IA de verdade:** crie a chave grátis do Gemini (veja a seção 6) e use:
@@ -61,7 +61,19 @@ Cada pessoa pode usar a IA até `AI_DAILY_LIMIT` vezes por dia (padrão: 40). A 
 
 Para testar à vontade no computador: `npm run dev:zerar-cota` zera a cota de hoje. Só funciona com o Supabase local (recusa se o `.env.local` apontar para a nuvem).
 
+### Editor de currículo e modelos em PDF
+
+Em **Currículo → Editar e escolher modelo** (`/curriculo/editar`):
+
+- **Editor por seções** (resumo, experiências, formação, cursos, habilidades, idiomas), com salvamento automático. Nome, cargo, registro e contatos vêm de Meu perfil.
+- **4 modelos** otimizados para ATS (uma coluna, texto selecionável): Clássico, Moderno, Compacto e Geométrico. Trocar de modelo não muda o conteúdo; o modelo escolhido vale também para os PDFs baixados em Candidaturas e em "Me candidatar".
+- **Prévia fiel:** a tela gera o PDF de verdade e desenha as páginas com pdf.js. O que aparece é exatamente o que será baixado, no computador e no celular (abas "Editar" e "Ver").
+- **Melhorar com IA** no resumo, em cada experiência e nas habilidades (função `melhorar-secao`). A IA só sugere; nada muda até a pessoa tocar em "Usar esta versão", e dá para desfazer. Os contatos são trocados por marcadores antes de ir para a IA.
+- **Versões:** "Criar uma cópia" guarda uma nova versão com nome; a lista de versões mostra o nome e a data.
+
 ### Dados de exemplo (seed)
+
+Os dados de exemplo usam **apenas domínios reservados para exemplos** (`example.com`, `example.org`, `.invalid`). As vagas de exemplo não têm link e aparecem com o selo "Vaga de exemplo", sem os botões de candidatura. Um teste (`src/lib/example-data.test.ts`) falha se algum domínio real entrar no seed.
 
 O arquivo `supabase/seed.sql` cria dois usuários com as telas já preenchidas (vagas, candidaturas, notas e cartas):
 
@@ -284,7 +296,7 @@ Regra do app: **só fontes 100% gratuitas, sem cartão, com uso permitido pelos 
 | **Himalayas** | não (opcional, gratuita) | vagas remotas abertas a cada país | botão com o link original; link visível para a fonte; não repassar a outros sites; só pelo servidor |
 | **Arbeitnow** | não | Europa (sobretudo Alemanha), presenciais e remotas | "não abuse" e link de volta |
 | **Remotive** | não | poucas vagas remotas (com 24 h de atraso) | no máx. 4 consultas por dia; crédito "Remotive" com link |
-| **Jooble** | **sim** (formulário) | Brasil e Portugal, inclusive presenciais | ligada só com `JOOBLE_API_KEY` |
+| **Jooble** | **sim** (formulário) | o país do site onde a chave foi pedida | ligada só com `JOOBLE_API_KEY`; a chave nunca aparece em logs |
 | Adzuna | — | — | **desligada**: não é gratuita (exige cartão) |
 
 O app guarda cada consulta em cache (`source_cache`) e só consulta de novo depois do intervalo pedido pela fonte, mesmo com várias pessoas.

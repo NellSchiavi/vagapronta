@@ -3,7 +3,7 @@ import { useAuth } from '@/lib/auth'
 import { invokeAi } from '@/lib/ai'
 import { queryClient } from '@/lib/query-client'
 import type { CountryCode } from '@/lib/countries'
-import type { Resume, ResumeContent, ResumeSections, ResumeSource } from '@/lib/resume'
+import type { Resume, ResumeContent, ResumeSections, ResumeSource, ResumeTemplate } from '@/lib/resume'
 import { asJson, supabase } from '@/lib/supabase'
 import type { AnalysisSuggestion, ResumeAnalysis } from '@/lib/types'
 
@@ -166,4 +166,52 @@ export async function createResume(opts: {
 
 export function useInvalidateResumes() {
   return useRefresh()
+}
+
+// ---------------------------------------------------------------------------
+// Editor de currículo
+// ---------------------------------------------------------------------------
+
+/** Grava o que a pessoa editou (nome da versão, modelo e seções) */
+export async function saveResumeEdits(resumeId: string, edits: { title: string; template: ResumeTemplate; content: ResumeContent }) {
+  const { error } = await supabase
+    .from('resumes')
+    .update({
+      title: edits.title.trim() || 'Currículo',
+      template: edits.template,
+      content: asJson(edits.content),
+    })
+    .eq('id', resumeId)
+  if (error) throw error
+  refreshResumeData()
+}
+
+/** "Salvar como nova versão": uma cópia com outro nome (a original fica como estava) */
+export async function duplicateResume(from: Resume, edits: { title: string; template: ResumeTemplate; content: ResumeContent }) {
+  const { data, error } = await supabase
+    .from('resumes')
+    .insert({
+      title: edits.title.trim() || `${from.title} (cópia)`,
+      template: edits.template,
+      country: from.country,
+      content: asJson(edits.content),
+      source: 'editor',
+      is_principal: false,
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+  refreshResumeData()
+  return data.id as string
+}
+
+export type ImproveKind = 'resumo' | 'experiencia' | 'habilidades'
+export interface ImproveSuggestion {
+  texto: string
+  dica: string
+}
+
+/** "Melhorar com IA" de uma parte do currículo (só sugere; a tela decide se usa) */
+export function improveSection(input: { tipo: ImproveKind; texto: string; cargo_alvo?: string; contexto?: { cargo?: string; empresa?: string } }) {
+  return invokeAi<{ sugestao: ImproveSuggestion }>('melhorar-secao', input).then((r) => r.sugestao)
 }

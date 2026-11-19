@@ -3,7 +3,7 @@ import { buildResumePdf, resumeFileName } from '@/components/pdf/resume-pdf'
 import { saveBlob } from '@/components/pdf/pdf-kit'
 import { hasGaps } from '@/lib/gaps'
 import { countryInfo } from '@/lib/paises'
-import type { ResumeContent } from '@/lib/resume'
+import type { ResumeContent, ResumeTemplate } from '@/lib/resume'
 import { supabase } from '@/lib/supabase'
 
 export interface Sender {
@@ -16,7 +16,7 @@ export interface Sender {
 
 /** Baixa o PDF do currículo de uma versão (gera pelas seções; se não houver, usa o PDF original) */
 export async function downloadResumeById(resumeId: string, sender: Sender, company?: string | null) {
-  const { data: r, error } = await supabase.from('resumes').select('content, file_path, country').eq('id', resumeId).single()
+  const { data: r, error } = await supabase.from('resumes').select('content, file_path, country, template').eq('id', resumeId).single()
   if (error) throw error
   const content = r.content as unknown as ResumeContent
   const fileName = resumeFileName(sender.name, company)
@@ -27,6 +27,7 @@ export async function downloadResumeById(resumeId: string, sender: Sender, compa
       registry: sender.registry,
       contact: sender.contact,
       sections: content.sections,
+      template: r.template as ResumeTemplate,
       footerNote: countryInfo(r.country).footer?.text,
     })
     saveBlob(blob, fileName)

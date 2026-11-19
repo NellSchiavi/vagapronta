@@ -16,6 +16,7 @@ import { LettersPage } from '@/pages/letters/LettersPage'
 import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { InstallButtonPage } from '@/pages/InstallButtonPage'
 import { ResumePage } from '@/pages/resume/ResumePage'
+import { ResumeEditorPage } from '@/pages/resume/editor/ResumeEditorPage'
 import { LoginPage } from '@/pages/login/LoginPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { SetupMissingPage } from '@/pages/SetupMissingPage'
@@ -42,6 +43,7 @@ export function App() {
                       <Route element={<AppLayout />}>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/curriculo" element={<ResumePage />} />
+                        <Route path="/curriculo/editar" element={<ResumeEditorPage />} />
                         <Route path="/adaptar" element={<AdaptPage />} />
                         <Route path="/cartas" element={<LettersPage />} />
                         <Route path="/vagas" element={<JobsPage />} />

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useIsDesktop } from '@/lib/use-is-desktop'
 import { useSearchParams } from 'react-router-dom'
 import { KanbanSquare, Plus, RefreshCw } from 'lucide-react'
 import { EmptyState } from '@/components/brand/empty-state'
@@ -12,18 +13,6 @@ import { useApplications, type ApplicationRow } from '@/lib/queries/applications
 import { ApplicationSheet, type DraftApplication } from './ApplicationSheet'
 import { DesktopBoard, groupByStatus, MobileBoard } from './Board'
 import { moveApplication } from './move'
-
-function useIsDesktop() {
-  const query = '(min-width: 1024px)'
-  const [desktop, setDesktop] = useState(() => window.matchMedia(query).matches)
-  useEffect(() => {
-    const m = window.matchMedia(query)
-    const on = () => setDesktop(m.matches)
-    m.addEventListener('change', on)
-    return () => m.removeEventListener('change', on)
-  }, [])
-  return desktop
-}
 
 export function ApplicationsPage() {
   const { data: rows, isLoading, error, refetch, isRefetching } = useApplications()
