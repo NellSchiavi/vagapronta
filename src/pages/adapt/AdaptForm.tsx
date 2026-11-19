@@ -25,13 +25,17 @@ interface Props {
   bases: Resume[]
   defaultBaseId: string
   jobId: string | null
+  /** link vindo de "Achou uma vaga? Cole o link" (tela Vagas) */
+  initialUrl?: string | null
   onClearJob: () => void
 }
 
-export function AdaptForm({ bases, defaultBaseId, jobId, onClearJob }: Props) {
+export function AdaptForm({ bases, defaultBaseId, jobId, initialUrl, onClearJob }: Props) {
   const { user } = useAuth()
   const draftKey = user ? `vp-adaptar-${user.id}` : null
-  const [draft, setDraft] = useState(() => loadDraft<{ text: string; url: string }>(draftKey ?? '') ?? { text: '', url: '' })
+  const [draft, setDraft] = useState(() =>
+    initialUrl ? { text: '', url: initialUrl } : (loadDraft<{ text: string; url: string }>(draftKey ?? '') ?? { text: '', url: '' }),
+  )
   const [baseId, setBaseId] = useState(defaultBaseId)
   const [errors, setErrors] = useState<{ text?: string; url?: string }>({})
   const { data: job } = useJob(jobId)

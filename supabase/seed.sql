@@ -307,3 +307,21 @@ insert into public.applications (user_id, job_id, resume_id, cover_letter_id, co
   ('5eed0000-0000-4000-8000-00000000000a', null, '5eed0000-0000-4000-8000-0000000a0201', null,
    'E-commerce Exemplo', 'Cientista de Dados Jr', null, 'recusada', current_date - 30,
    null, null, 0, now() - interval '30 days');
+
+-- ---------------------------------------------------------------------
+-- Vagas do seed: origem "exemplo", destino Brasil; e algumas no exterior
+-- para mostrar os avisos (idioma, visto, remoto a partir do Brasil).
+-- ---------------------------------------------------------------------
+update public.jobs set source = 'exemplo', destination = 'BR', country = 'BR' where external_id like 'demo-%';
+
+insert into public.jobs (user_id, source, external_id, title, company, location, country, destination, work_mode, url, description,
+  compatibility, match_notes, status, published_at, language_required, visa_sponsorship, remote_from_brazil) values
+  ('5eed0000-0000-4000-8000-00000000000b', 'exemplo', 'demo-b-pt-1', 'Técnica(o) Superior de Análises Clínicas', 'Clínica Exemplo do Porto', 'Porto', 'PT', 'PT', 'presencial',
+   'https://exemplo.com/vagas/porto-analises', 'Laboratório de análises clínicas no Porto procura profissional para hematologia e bioquímica, com controle de qualidade interno e registo de resultados. Requisito: reconhecimento do diploma em Portugal.',
+   74, '{"estimada": true, "termos": ["hematologia", "bioquimica", "qualidade"]}', 'nova', now() - interval '1 day', null, null, null),
+  ('5eed0000-0000-4000-8000-00000000000a', 'exemplo', 'demo-a-eu-1', 'Data Engineer (m/w/d)', 'Exemplo Analytics GmbH', 'Berlin', 'DE', 'EU', 'hibrido',
+   'https://exemplo.com/vagas/berlin-data', 'We build data pipelines with Python, SQL and Airflow. Fluent German (C1) is required for client meetings. We offer visa sponsorship and relocation support.',
+   81, '{"estimada": true, "termos": ["python", "sql", "airflow"]}', 'nova', now() - interval '2 days', 'de', true, null),
+  ('5eed0000-0000-4000-8000-00000000000a', 'exemplo', 'demo-a-us-1', 'Senior Data Analyst', 'Exemplo Health Inc.', 'Americas, Brazil', 'US', 'US', 'remoto',
+   'https://exemplo.com/vagas/us-analyst', 'Remote role open to candidates in the Americas, including Brazil. SQL, Python and dashboards. English required for daily meetings.',
+   77, '{"estimada": true, "termos": ["sql", "python", "dashboards"]}', 'nova', now() - interval '1 day', 'en', null, true);

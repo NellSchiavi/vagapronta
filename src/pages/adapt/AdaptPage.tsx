@@ -96,6 +96,7 @@ export function AdaptPage() {
         bases={bases}
         defaultBaseId={principal.id}
         jobId={jobId}
+        initialUrl={params.get('link')}
         onClearJob={() => setParams({}, { replace: true })}
       />
     )

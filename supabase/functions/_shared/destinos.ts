@@ -56,9 +56,9 @@ export function rankScore(compatibility: number | null, priority: number | null)
 }
 
 /**
- * Países da Adzuna para cada destino do app (null = a Adzuna não cobre;
- * nesses casos a busca usa só vagas remotas da Remotive).
- * "EU" (Europa) busca nos países europeus cobertos pela Adzuna.
+ * Adzuna (DESLIGADA: não é gratuita; ver _shared/vagas/adzuna.ts).
+ * Países da Adzuna para cada destino, caso um dia seja ligada.
+ * As fontes gratuitas em uso estão em _shared/vagas/fontes.ts.
  */
 export const ADZUNA_COUNTRIES: Record<string, string[]> = {
   BR: ['br'],

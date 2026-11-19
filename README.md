@@ -227,7 +227,7 @@ Enquanto isso não for feito, o botão "Entrar com LinkedIn" e o "Conectar Linke
 
 ## 5. Banco de dados na nuvem (em construção)
 
-## 6. Chaves do Gemini e da Adzuna
+## 6. Chaves do Gemini e fontes de vagas
 
 ### 6.1 Gemini (IA), no nível gratuito
 
@@ -265,11 +265,38 @@ Enquanto isso não for feito, o botão "Entrar com LinkedIn" e o "Conectar Linke
 
 **Privacidade:** antes de enviar o currículo para a IA, o app troca **e-mail, telefone, CPF, CEP, endereço e links pessoais** por marcadores (`[EMAIL_1]`, `[TELEFONE_1]`…). Esses dados nunca saem do servidor do app e são recolocados no resultado. Veja `supabase/functions/_shared/privacy.ts`.
 
-### 6.2 Adzuna (vagas) (em construção)
+### 6.2 Fontes de vagas (só gratuitas)
 
-A busca diária vai usar as preferências de **Meu perfil** e cobrir todas as áreas, não só escritório: inclusive as categorias de **saúde** (`healthcare-nursing-jobs`) e **científicas / controle de qualidade** (`scientific-qa-jobs`) da Adzuna.
+Regra do app: **só fontes 100% gratuitas, sem cartão, com uso permitido pelos termos e sem copiar páginas de sites** (sem scraping). As fontes recebem **apenas o termo de busca** (ex.: "data analyst") e o país. Nenhum dado pessoal ou do currículo sai do app.
 
-## 7. Funções e busca diária de vagas (em construção)
+| Fonte | Chave? | Cobre | Regras que o app segue |
+| --- | --- | --- | --- |
+| **Jobicy** | não | vagas remotas; filtro por Brasil, Portugal, Europa, EUA… | crédito com link; botão leva ao link original; no máx. 1 consulta por hora |
+| **Himalayas** | não (opcional, gratuita) | vagas remotas abertas a cada país | botão com o link original; link visível para a fonte; não repassar a outros sites; só pelo servidor |
+| **Arbeitnow** | não | Europa (sobretudo Alemanha), presenciais e remotas | "não abuse" e link de volta |
+| **Remotive** | não | poucas vagas remotas (com 24 h de atraso) | no máx. 4 consultas por dia; crédito "Remotive" com link |
+| **Jooble** | **sim** (formulário) | Brasil e Portugal, inclusive presenciais | ligada só com `JOOBLE_API_KEY` |
+| Adzuna | — | — | **desligada**: não é gratuita (exige cartão) |
+
+O app guarda cada consulta em cache (`source_cache`) e só consulta de novo depois do intervalo pedido pela fonte, mesmo com várias pessoas.
+
+**Atenção para áreas presenciais (ex.: biomedicina, laboratório):** as fontes sem chave são quase todas de vagas **remotas**. Para essas áreas, a **Jooble** e a seção **"Procure também em"** da tela Vagas (LinkedIn, Indeed, Gupy, Vagas.com, Catho, Net-Empregos, EURES…) são o que mais ajuda. Os links já abrem com o cargo, a cidade e a modalidade. Quando a pessoa encontra uma vaga lá, cola o link no app para importar e adaptar o currículo.
+
+**Variáveis (secrets das Edge Functions):**
+
+- `JOBS_MODE`: `real` (padrão na nuvem); `mock` (desenvolvimento: no lugar das fontes com chave ainda não ligadas aparecem **vagas de exemplo**, marcadas como exemplo na tela); `offline` (usa só o cache, sem rede).
+- `JOOBLE_API_KEY` e `HIMALAYAS_API_KEY`: opcionais.
+
+**Compatibilidade estimada:** a busca compara, **sem IA** (custo zero), o título da vaga com os cargos desejados e as habilidades do currículo com o anúncio. A análise completa, com IA, acontece ao tocar em "Adaptar currículo". Os pesos por destino (ex.: 60/30/10) e o bônus de prioridade ficam em `supabase/functions/_shared/destinos.ts`.
+
+## 7. Busca diária de vagas (agendamento)
+
+A função `buscar-vagas` roda sozinha todos os dias às 7h (Brasília) e também pelo botão "Buscar agora" (até 5 vezes por dia por pessoa).
+
+1. Crie um segredo qualquer, longo (ex.: gerado por um gerenciador de senhas), e configure em **Edge Functions → Secrets** com o nome `CRON_SECRET`.
+2. Em **Database → Extensions**, confira que `pg_cron` e `pg_net` estão ativas (a migration já tenta ativar).
+3. Abra o **SQL Editor**, cole `supabase/cron/agendar-busca.sql`, troque o endereço do projeto e o segredo, e rode **uma vez**. Os dois valores ficam no Vault do Supabase, criptografados.
+4. Para conferir: `select * from cron.job_run_details order by start_time desc limit 5;`
 
 ## 8. Publicar no GitHub Pages (em construção)
 
@@ -284,7 +311,11 @@ Todas as tabelas têm `user_id`, `created_at`, `updated_at` e **RLS**: cada pess
 | `profiles` | nome, foto, cargo desejado, cidade, país do currículo e preferências |
 | `resumes` | currículos e versões (a versão adaptada aponta para a vaga em `job_id`) |
 | `resume_analyses` | histórico das análises: nota geral, notas por critério e sugestões |
-| `jobs` | vagas sugeridas (Adzuna, Remotive) ou cadastradas à mão |
+| `jobs` | vagas sugeridas pela busca diária (com destino, idioma, visto e remoto a partir do Brasil) ou trazidas por link |
+| `job_destinations` | onde a pessoa quer trabalhar, em ordem de preferência |
+| `job_preferences` | o que a pessoa procura: cargos, modalidade, nível, palavras, empresas bloqueadas… |
+| `job_search_runs` | registro de cada busca (agendada ou manual) |
+| `source_cache` | cache das fontes de vagas (só o servidor acessa) |
 | `cover_letters` | cartas de apresentação |
 | `applications` | candidaturas do kanban |
 | `ai_usage` | quantas vezes cada pessoa usou a IA no dia (limite da cota gratuita) |

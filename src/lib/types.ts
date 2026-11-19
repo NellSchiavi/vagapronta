@@ -9,7 +9,7 @@ import type { ApplicationStatus } from '@/components/brand/pills'
 type Row<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
 
 export type { ApplicationStatus }
-export type JobSource = 'adzuna' | 'remotive' | 'manual'
+export type JobSource = 'jobicy' | 'himalayas' | 'arbeitnow' | 'remotive' | 'jooble' | 'usajobs' | 'adzuna' | 'exemplo' | 'link' | 'manual'
 export type JobStatus = 'nova' | 'salva' | 'descartada'
 export type WorkMode = 'presencial' | 'hibrido' | 'remoto'
 export type LetterTone = 'formal' | 'caloroso' | 'direto'
@@ -17,6 +17,12 @@ export type LetterTone = 'formal' | 'caloroso' | 'direto'
 export interface MatchNotes {
   pontos_fortes?: string[]
   lacunas?: string[]
+  /** compatibilidade estimada pela busca (sem IA) */
+  estimada?: boolean
+  /** palavras do currículo encontradas no anúncio */
+  termos?: string[]
+  /** vaga de exemplo (fonte ainda não ligada) */
+  exemplo?: boolean
 }
 
 export type Job = Omit<Row<'jobs'>, 'source' | 'status' | 'work_mode' | 'match_notes'> & {

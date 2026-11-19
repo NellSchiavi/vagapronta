@@ -105,16 +105,30 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"jobs": {
+                },"job_search_runs": {
                   Row: {
-                    "company": string | null,"compatibility": number | null,"created_at": string,"description": string | null,"external_id": string | null,"id": string,"location": string | null,"match_notes": NonNullable<Json>,"published_at": string | null,"salary": string | null,"source": string,"status": string,"title": string,"updated_at": string,"url": string | null,"user_id": string,"work_mode": string | null
+                    "created_at": string,"found": number,"id": string,"inserted": number,"mode": string,"sources": NonNullable<Json>,"trigger": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "company"?: string | null,"compatibility"?: number | null,"created_at"?: string,"description"?: string | null,"external_id"?: string | null,"id"?: string,"location"?: string | null,"match_notes"?: NonNullable<Json>,"published_at"?: string | null,"salary"?: string | null,"source"?: string,"status"?: string,"title": string,"updated_at"?: string,"url"?: string | null,"user_id"?: string,"work_mode"?: string | null
+                    "created_at"?: string,"found"?: number,"id"?: string,"inserted"?: number,"mode"?: string,"sources"?: NonNullable<Json>,"trigger": string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "company"?: string | null,"compatibility"?: number | null,"created_at"?: string,"description"?: string | null,"external_id"?: string | null,"id"?: string,"location"?: string | null,"match_notes"?: NonNullable<Json>,"published_at"?: string | null,"salary"?: string | null,"source"?: string,"status"?: string,"title"?: string,"updated_at"?: string,"url"?: string | null,"user_id"?: string,"work_mode"?: string | null
+                    "created_at"?: string,"found"?: number,"id"?: string,"inserted"?: number,"mode"?: string,"sources"?: NonNullable<Json>,"trigger"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"jobs": {
+                  Row: {
+                    "company": string | null,"compatibility": number | null,"country": string | null,"created_at": string,"description": string | null,"destination": string | null,"external_id": string | null,"id": string,"language_required": string | null,"location": string | null,"match_notes": NonNullable<Json>,"published_at": string | null,"remote_from_brazil": boolean | null,"salary": string | null,"source": string,"source_url": string | null,"status": string,"title": string,"updated_at": string,"url": string | null,"user_id": string,"visa_sponsorship": boolean | null,"work_mode": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company"?: string | null,"compatibility"?: number | null,"country"?: string | null,"created_at"?: string,"description"?: string | null,"destination"?: string | null,"external_id"?: string | null,"id"?: string,"language_required"?: string | null,"location"?: string | null,"match_notes"?: NonNullable<Json>,"published_at"?: string | null,"remote_from_brazil"?: boolean | null,"salary"?: string | null,"source"?: string,"source_url"?: string | null,"status"?: string,"title": string,"updated_at"?: string,"url"?: string | null,"user_id"?: string,"visa_sponsorship"?: boolean | null,"work_mode"?: string | null
+                  }
+                  Update: {
+                    "company"?: string | null,"compatibility"?: number | null,"country"?: string | null,"created_at"?: string,"description"?: string | null,"destination"?: string | null,"external_id"?: string | null,"id"?: string,"language_required"?: string | null,"location"?: string | null,"match_notes"?: NonNullable<Json>,"published_at"?: string | null,"remote_from_brazil"?: boolean | null,"salary"?: string | null,"source"?: string,"source_url"?: string | null,"status"?: string,"title"?: string,"updated_at"?: string,"url"?: string | null,"user_id"?: string,"visa_sponsorship"?: boolean | null,"work_mode"?: string | null
                   }
                   Relationships: [
                     
@@ -172,6 +186,20 @@ isOneToOne: false
       referencedRelation: "jobs"
       referencedColumns: ["id","user_id"]
     }
+                  ]
+                },"source_cache": {
+                  Row: {
+                    "fetched_at": string,"jobs": NonNullable<Json>,"key": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "fetched_at"?: string,"jobs"?: NonNullable<Json>,"key": string
+                  }
+                  Update: {
+                    "fetched_at"?: string,"jobs"?: NonNullable<Json>,"key"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 }
           }
