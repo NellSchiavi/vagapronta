@@ -14,6 +14,7 @@ import { ApplicationsPage } from '@/pages/applications/ApplicationsPage'
 import { JobsPage } from '@/pages/jobs/JobsPage'
 import { LettersPage } from '@/pages/letters/LettersPage'
 import { ProfilePage } from '@/pages/profile/ProfilePage'
+import { InstallButtonPage } from '@/pages/InstallButtonPage'
 import { ResumePage } from '@/pages/resume/ResumePage'
 import { LoginPage } from '@/pages/login/LoginPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
@@ -46,6 +47,7 @@ export function App() {
                         <Route path="/vagas" element={<JobsPage />} />
                         <Route path="/candidaturas" element={<ApplicationsPage />} />
                         <Route path="/perfil" element={<ProfilePage />} />
+                        <Route path="/instalar-botao" element={<InstallButtonPage />} />
                       </Route>
                     </Route>
                   </Route>

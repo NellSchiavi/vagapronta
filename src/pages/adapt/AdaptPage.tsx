@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { LoadingCards } from '@/components/ui/skeleton'
 import { clearAiTask, useAiTask } from '@/lib/ai-tasks'
+import { textFromBookmarklet } from '@/lib/bookmarklet'
 import { useResumes } from '@/lib/queries/resumes'
 import type { SavedAdaptation } from '@/lib/queries/adapt'
 import type { Adaptation } from '@/lib/types'
@@ -97,11 +98,13 @@ export function AdaptPage() {
         defaultBaseId={principal.id}
         jobId={jobId}
         initialUrl={params.get('link')}
-        initialText={params.get('texto')}
+        initialText={params.get('texto') ? textFromBookmarklet({ titulo: params.get('titulo'), empresa: params.get('empresa'), texto: params.get('texto') }) : null}
         onInitialUsed={() => {
           const next = new URLSearchParams(params)
           next.delete('link')
           next.delete('texto')
+          next.delete('titulo')
+          next.delete('empresa')
           setParams(next, { replace: true })
         }}
         onClearJob={() => setParams({}, { replace: true })}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertCircle, ArrowUpRight, Info, RotateCw, Sparkles, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { AiUsageNote } from '@/components/ai/ai-usage-note'
 import { CompanyInitial, MatchPill } from '@/components/brand/pills'
 import { Button } from '@/components/ui/button'
@@ -244,6 +245,13 @@ export function AdaptForm({ bases, defaultBaseId, jobId, initialUrl, initialText
               </div>
             </div>
           )}
+          <p className="hidden text-[13px] text-muted lg:block">
+            Usa o computador?{' '}
+            <Link to="/instalar-botao" className="font-medium text-terra-strong underline underline-offset-2">
+              Instale o botão “Enviar para o VagaPronta”
+            </Link>{' '}
+            e traga a vaga do LinkedIn, Gupy ou Indeed com um clique.
+          </p>
           {draft.text.trim() && draft.url.trim() && (
             <p className="text-[13px] text-muted">Como você colou o texto, vamos usar o texto. O link fica guardado na vaga para o “Me candidatar”.</p>
           )}

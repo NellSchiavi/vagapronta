@@ -139,6 +139,10 @@ O **link** do e-mail não funciona no celular nesse modo de teste (ele aponta pa
 
 ---
 
+### Botão "Enviar para o VagaPronta" (computador)
+
+Em **Instalar botão no navegador** (menu do avatar), a pessoa arrasta o botão para a barra de favoritos do Chrome ou do Edge. Numa página de vaga (LinkedIn, Gupy, Indeed, site da empresa), o favorito lê só o que está na tela (título, empresa, texto e o link limpo) e abre o VagaPronta em Adaptar já preenchido. Os dados vão no endereço do app, depois do `#`, e essa parte não é enviada a nenhum servidor. O código fica em `src/lib/bookmarklet/enviar-vaga.js`. Se o endereço do app mudar (por exemplo, ao publicar), é preciso instalar o botão de novo a partir do app publicado.
+
 ## 2. Criar o projeto no Supabase (em construção)
 
 ## 3. Login por e-mail na nuvem

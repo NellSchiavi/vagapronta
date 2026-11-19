@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ChevronsUpDown, LogOut, Moon, Sun, UserRound } from 'lucide-react'
+import { BookmarkPlus, ChevronsUpDown, LogOut, Moon, Sun, UserRound } from 'lucide-react'
 import { Avatar } from '@/components/brand/avatar'
 import {
   DropdownMenu,
@@ -28,6 +28,9 @@ function MenuItems() {
       <DropdownMenuSeparator />
       <DropdownMenuItem onSelect={() => navigate('/perfil')}>
         <UserRound aria-hidden /> Meu perfil
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => navigate('/instalar-botao')}>
+        <BookmarkPlus aria-hidden /> Instalar botão no navegador
       </DropdownMenuItem>
       <DropdownMenuItem onSelect={(e) => { e.preventDefault(); toggle() }}>
         {theme === 'dark' ? <Sun aria-hidden /> : <Moon aria-hidden />}
