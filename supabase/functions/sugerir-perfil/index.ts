@@ -55,9 +55,9 @@ Deno.serve(
     const text = (content.raw_text && content.raw_text.length > 80 ? content.raw_text : resumeToText(content)).trim()
     if (text.length < 80) throw new HttpError(422, 'O currículo está muito curto para sugerir dados do perfil.', 'texto_curto')
 
-    await consumeQuota(supabase, 'sugerir-perfil')
+    const quota = await consumeQuota(supabase, 'sugerir-perfil')
     const redacted = redactPersonalData(clip(text))
-    const raw = await generateJson({
+    const raw = await quota.guard(() => generateJson({
       task: 'sugerir-perfil',
       system: PROFILE_SUGGEST_SYSTEM,
       prompt: `Documento:\n"""\n${redacted.text}\n"""`,
@@ -78,7 +78,7 @@ Deno.serve(
         nivel: null,
         momento: null,
       }),
-    })
+    }))
 
     // garantia extra: telefone e links só valem se vieram do documento (marcadores reais)
     const isToken = (v: string | null, kind: string) => !v || new RegExp(`^\\[${kind}_\\d+\\]$`).test(v) || redacted.text.includes(v)

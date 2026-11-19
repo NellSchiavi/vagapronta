@@ -57,11 +57,11 @@ Deno.serve(
       throw new HttpError(422, 'O texto do currículo está muito curto para organizar. Envie o PDF de novo ou cole o texto completo.', 'texto_curto')
     }
 
-    await consumeQuota(supabase, 'organizar-curriculo')
+    const quota = await consumeQuota(supabase, 'organizar-curriculo')
 
     // dados pessoais não saem do servidor: vão marcadores e voltam os valores originais
     const redacted = redactPersonalData(clip(text))
-    const sections = await generateJson({
+    const sections = await quota.guard(() => generateJson({
       task: 'organizar-curriculo',
       system: ORGANIZE_SYSTEM,
       prompt: `Texto do currículo:\n"""\n${redacted.text}\n"""`,
@@ -69,7 +69,7 @@ Deno.serve(
       temperature: 0.1,
       tier: 'lite',
       mock: () => mockSections(redacted.text),
-    })
+    }))
 
     // garantia extra: endereço completo não vai para o campo "cidade"
     const c = sections.contato

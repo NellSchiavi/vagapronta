@@ -87,7 +87,7 @@ Deno.serve(
       throw new HttpError(422, 'Seu currículo está quase vazio. Envie ou organize o currículo antes de criar a carta.', 'texto_curto')
     }
 
-    await consumeQuota(supabase, 'carta')
+    const quota = await consumeQuota(supabase, 'carta')
 
     const prefs = (profile?.preferences ?? {}) as { resume_language?: string }
     const langCode = prefs.resume_language || countryInfo(resume.country).languages[0].code
@@ -118,7 +118,7 @@ Deno.serve(
       '"""',
     ].join('\n')
 
-    const raw = await generateJson({
+    const raw = await quota.guard(() => generateJson({
       task: 'gerar-carta',
       system: LETTER_SYSTEM,
       prompt,
@@ -126,7 +126,7 @@ Deno.serve(
       temperature: 0.6,
       tier: 'standard',
       mock: () => mockLetter('[NOME]', title || 'a vaga', company, tone),
-    })
+    }))
     // nenhum número inventado: o que não está no currículo nem no anúncio vira [X]
     raw.carta = guardInventedNumbers(raw.carta, [prompt]).replace(/\[NOME\]/g, name)
     const letter = redacted.restore(raw)

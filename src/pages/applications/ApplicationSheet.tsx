@@ -10,6 +10,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { addDays, FOLLOW_UP_DAYS } from '@/lib/application-rules'
 import { downloadLetterById, downloadResumeById } from '@/lib/application-pdfs'
 import { toISODate } from '@/lib/dates'
+import { cleanJobUrl } from '@/lib/links'
 import { friendlyDataError } from '@/lib/errors'
 import { useLetters } from '@/lib/queries/letters'
 import { useResumes } from '@/lib/queries/resumes'
@@ -107,7 +108,7 @@ export function ApplicationSheet({ open, onOpenChange, row, initial, focusFollow
     const patch = {
       company: draft.company.trim(),
       role: draft.role.trim(),
-      url: draft.url.trim() || null,
+      url: draft.url.trim() ? cleanJobUrl(draft.url) : null,
       status: draft.status,
       applied_on: draft.applied_on || null,
       follow_up_on: draft.follow_up_on || null,

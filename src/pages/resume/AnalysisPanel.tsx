@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, Check, Copy, RotateCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { AiProgress } from '@/components/ai/ai-progress'
+import { AiUsageNote } from '@/components/ai/ai-usage-note'
 import { GapEditor, GapText } from '@/components/ai/gap-text'
 import { ScoreRing } from '@/components/brand/score-ring'
 import { Button } from '@/components/ui/button'
@@ -101,7 +102,7 @@ export function AnalysisPanel({ resume }: { resume: Resume }) {
   }
 
   if (isLoading) return <LoadingCards count={2} label="Carregando a análise…" />
-  if (task) return <AiProgress steps={ANALYZE_STEPS} startedAt={task.startedAt} status={task.status} onRetry={task.retry} />
+  if (task) return <AiProgress steps={ANALYZE_STEPS} startedAt={task.startedAt} status={task.status} retryAt={task.retryAt} onRetry={task.retry} />
 
   if (!latest) {
     return (
@@ -115,6 +116,7 @@ export function AnalysisPanel({ resume }: { resume: Resume }) {
             <p className="mt-1.5 text-ink/80">
               Você recebe uma nota de 0 a 100, vê se ele passa nos filtros das empresas e ganha dicas do que melhorar.
             </p>
+            <AiUsageNote className="mt-2" />
           </div>
           <Button size="lg" onClick={run} className="w-full sm:w-auto">
             <Sparkles aria-hidden /> Analisar meu currículo

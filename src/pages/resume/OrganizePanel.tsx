@@ -51,7 +51,7 @@ export function OrganizePanel({ resume }: { resume: Resume }) {
   }
 
   if (task && task.status !== 'done') {
-    return <AiProgress steps={STEPS} startedAt={task.startedAt} status={task.status} onRetry={task.retry} />
+    return <AiProgress steps={STEPS} startedAt={task.startedAt} status={task.status} retryAt={task.retryAt} onRetry={task.retry} />
   }
 
   if (preview) {

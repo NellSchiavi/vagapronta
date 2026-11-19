@@ -12,6 +12,8 @@ export class HttpError extends Error {
     public status: number,
     message: string,
     public code = 'erro',
+    /** segundos sugeridos para tentar de novo (limite por minuto da IA) */
+    public retryAfter?: number,
   ) {
     super(message)
   }
@@ -41,7 +43,9 @@ export function handle(fn: (req: Request, body: Record<string, unknown>) => Prom
       }
       return await fn(req, body)
     } catch (err) {
-      if (err instanceof HttpError) return json({ error: err.message, code: err.code }, err.status)
+      if (err instanceof HttpError) {
+        return json({ error: err.message, code: err.code, ...(err.retryAfter ? { retry_after: err.retryAfter } : {}) }, err.status)
+      }
       console.error('[erro inesperado]', err)
       return json({ error: 'Algo não saiu como esperado. Tente de novo em instantes.', code: 'interno' }, 500)
     }

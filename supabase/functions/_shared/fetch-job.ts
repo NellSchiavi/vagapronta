@@ -6,6 +6,7 @@
  * Se não der para ler, quem chama pede para a pessoa colar o texto.
  */
 import { HttpError } from './http.ts'
+import { blockedSite, cleanJobUrl } from './links.ts'
 
 export interface FetchedJob {
   text: string
@@ -104,7 +105,10 @@ export function findJobPosting(html: string): FetchedJob | null {
 }
 
 export async function fetchJobFromUrl(raw: string): Promise<FetchedJob> {
-  const url = assertSafeUrl(raw)
+  // LinkedIn, Indeed…: nem tenta (a tela já pede o texto; isto é só a garantia do servidor)
+  const blocked = blockedSite(raw)
+  if (blocked) throw new HttpError(422, blocked.message, 'site_bloqueado')
+  const url = assertSafeUrl(cleanJobUrl(raw))
   const fail = () =>
     new HttpError(
       422,

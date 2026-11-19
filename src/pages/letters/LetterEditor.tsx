@@ -154,7 +154,7 @@ function Editor({ letter }: { letter: LetterRow }) {
       <LetterSheet value={text} onChange={setText} sender={sender} company={company} />
 
       {redo && redo.status !== 'done' ? (
-        <AiProgress steps={REDO_STEPS} startedAt={redo.startedAt} status={redo.status} onRetry={redo.retry} />
+        <AiProgress steps={REDO_STEPS} startedAt={redo.startedAt} status={redo.status} retryAt={redo.retryAt} onRetry={redo.retry} />
       ) : redo?.status === 'done' && redo.result ? (
         <Card className="border-terra/30 p-5">
           <p className="text-sm font-medium text-terra-strong">Nova versão · tom {TONE_LABEL[redo.result.tone].toLowerCase()}</p>

@@ -7,14 +7,14 @@ export type Database = {
           Tables: {
             "ai_usage": {
                   Row: {
-                    "by_feature": NonNullable<Json>,"calls": number,"created_at": string,"day": string,"updated_at": string,"user_id": string
+                    "by_feature": NonNullable<Json>,"calls": number,"created_at": string,"daily_limit": number,"day": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "by_feature"?: NonNullable<Json>,"calls"?: number,"created_at"?: string,"day"?: string,"updated_at"?: string,"user_id"?: string
+                    "by_feature"?: NonNullable<Json>,"calls"?: number,"created_at"?: string,"daily_limit"?: number,"day"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "by_feature"?: NonNullable<Json>,"calls"?: number,"created_at"?: string,"day"?: string,"updated_at"?: string,"user_id"?: string
+                    "by_feature"?: NonNullable<Json>,"calls"?: number,"created_at"?: string,"daily_limit"?: number,"day"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -211,6 +211,9 @@ isOneToOne: false
 { Args: { "p_daily_limit"?: number,"p_feature": string }; Returns: {
               "allowed": boolean,"daily_limit": number,"used": number
             }[]
+                           },
+"refund_ai_quota":
+{ Args: { "p_feature": string }; Returns: number
                            },
 "set_job_destinations":
 { Args: { "p_codes": (string)[] }; Returns: undefined

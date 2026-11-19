@@ -57,7 +57,9 @@ As ações de IA (organizar e analisar o currículo, adaptar à vaga, cartas) ro
 
 Depois de mudar o `.env` ou criar uma função nova, reinicie: `npx supabase stop` e `npx supabase start`. Mudanças no código de uma função que já existe recarregam sozinhas.
 
-Cada pessoa pode usar a IA até `AI_DAILY_LIMIT` vezes por dia (padrão: 40). Depois disso, o app mostra um aviso amigável e libera de novo no dia seguinte.
+Cada pessoa pode usar a IA até `AI_DAILY_LIMIT` vezes por dia (padrão: 40). A tela mostra, discretamente, quantos usos restam hoje. Chamadas que **falham** (erro, limite do Google, demora) não contam. Depois do limite, o app mostra um aviso amigável e libera de novo no dia seguinte.
+
+Para testar à vontade no computador: `npm run dev:zerar-cota` zera a cota de hoje. Só funciona com o Supabase local (recusa se o `.env.local` apontar para a nuvem).
 
 ### Dados de exemplo (seed)
 
@@ -256,7 +258,8 @@ Enquanto isso não for feito, o botão "Entrar com LinkedIn" e o "Conectar Linke
 
 **Limites do nível gratuito:**
 
-- **Pedidos por minuto e por dia:** o Google limita os dois. Quando o limite do dia acaba, o app mostra "A IA descansou por hoje. Tente de novo amanhã!". O limite por pessoa (`AI_DAILY_LIMIT`, padrão 40) existe para que vocês dois juntos não cheguem lá.
+- **Pedidos por minuto e por dia:** o Google limita os dois, separados por modelo. O app lê na resposta do Google qual limite estourou e tenta o modelo reserva primeiro. **Por minuto:** mostra "Muita gente usando a IA agora, tentando de novo em instantes" e tenta de novo sozinho (até 2 vezes). **Por dia** (todos os modelos): mostra "A IA descansou por hoje. Tente de novo amanhã!". O limite por pessoa (`AI_DAILY_LIMIT`, padrão 40) existe para que vocês dois juntos não cheguem lá.
+- **Sites que não deixam ler a vaga** (LinkedIn, Indeed, Glassdoor): a tela já pede o texto do anúncio antes de chamar o servidor, sem gastar cota. Todo link de vaga é guardado **limpo**, sem rastreamento nem tokens (`trackingId`, `otpToken`, `utm_…`); o do LinkedIn vira `https://www.linkedin.com/jobs/view/<número>/`.
 - **Horários de pico:** o Google às vezes responde "alta demanda". O app tenta de novo sozinho e, se preciso, usa outro modelo. Por isso uma análise pode levar até 1 minuto.
 
 **Modelos:**

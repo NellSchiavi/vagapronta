@@ -14,6 +14,7 @@
  * antes de montar o prompt.
  */
 import type { z } from 'npm:zod@3.24.1'
+import { classify429, MSG_LIMITE_DIA, MSG_LIMITE_MINUTO } from './ai-limits.ts'
 import { HttpError } from './http.ts'
 
 export interface GenerateJsonOptions<T> {
@@ -50,8 +51,8 @@ const DEFAULT_MODELS = {
   lite: 'gemini-3.5-flash-lite,gemini-flash-lite-latest',
 }
 
-/** códigos em que vale tentar o modelo reserva */
-const FALLBACK_CODES = new Set(['ia_indisponivel', 'ia_sobrecarregada', 'ia_modelo'])
+/** códigos em que vale tentar o modelo reserva (os limites do Gemini são separados por modelo) */
+const FALLBACK_CODES = new Set(['ia_indisponivel', 'ia_sobrecarregada', 'ia_modelo', 'ia_limite_minuto', 'ia_limite_dia'])
 
 class GeminiProvider implements AiProvider {
   name = 'gemini'
@@ -64,7 +65,7 @@ class GeminiProvider implements AiProvider {
   async completeJson(system: string, prompt: string, temperature: number) {
     // prazo total: as Edge Functions têm limite de tempo por chamada
     const deadline = Date.now() + 110_000
-    let last: HttpError | undefined
+    const errors: HttpError[] = []
     for (const model of this.models) {
       if (Date.now() > deadline - 5_000) break
       try {
@@ -72,13 +73,21 @@ class GeminiProvider implements AiProvider {
       } catch (err) {
         if (err instanceof HttpError && FALLBACK_CODES.has(err.code)) {
           console.warn(`[gemini] ${model} indisponível (${err.code}); tentando o próximo modelo`)
-          last = err
+          errors.push(err)
           continue
         }
         throw err
       }
     }
-    throw last ?? new HttpError(503, 'Não conseguimos falar com a IA agora. Tente de novo em instantes.', 'ia_indisponivel')
+    // "descansou por hoje" só quando TODOS os modelos estouraram o limite do dia;
+    // se algum só estourou o limite por minuto, a tela tenta de novo sozinha
+    const minute = errors.find((e) => e.code === 'ia_limite_minuto')
+    if (minute) throw minute
+    if (errors.length && errors.every((e) => e.code === 'ia_limite_dia')) throw errors[0]
+    throw (
+      errors.find((e) => e.code !== 'ia_limite_dia') ??
+      new HttpError(503, 'Não conseguimos falar com a IA agora. Tente de novo em instantes.', 'ia_indisponivel')
+    )
   }
 
   private async callModel(model: string, system: string, prompt: string, temperature: number, deadline: number): Promise<string> {
@@ -139,12 +148,10 @@ class GeminiProvider implements AiProvider {
 
     if (res.status === 429) {
       // o nível gratuito tem limite por minuto e por dia; a resposta diz qual estourou
-      const detail = await res.text()
-      console.warn('[gemini] limite atingido', model, detail.slice(0, 300))
-      if (/per.?day|PerDay|daily/i.test(detail)) {
-        throw new HttpError(429, 'A IA descansou por hoje. Tente de novo amanhã!', 'ia_limite_dia')
-      }
-      throw new HttpError(429, 'A IA recebeu muitos pedidos de uma vez. Espere um minuto e tente de novo.', 'ia_limite_minuto')
+      const info = classify429(await res.text())
+      console.warn(`[gemini] limite ${info.kind === 'dia' ? 'DIÁRIO' : 'POR MINUTO'} do Gemini em ${model}`, info.quotas.join(', ') || '(sem detalhes)', info.retryAfter ? `tentar em ${info.retryAfter}s` : '')
+      if (info.kind === 'dia') throw new HttpError(429, MSG_LIMITE_DIA, 'ia_limite_dia')
+      throw new HttpError(429, MSG_LIMITE_MINUTO, 'ia_limite_minuto', Math.min(60, Math.max(10, info.retryAfter ?? 20)))
     }
     if (res.status === 404) {
       console.error('[gemini] modelo não encontrado', model, (await res.text()).slice(0, 300))

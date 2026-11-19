@@ -7,11 +7,21 @@ export function dailyLimit() {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 40
 }
 
+export interface Quota {
+  used: number
+  limit: number
+  /**
+   * Roda a chamada de IA; se ela FALHAR (erro, 429, 503, tempo esgotado),
+   * devolve o uso à cota do dia e repassa o erro.
+   */
+  guard<T>(run: () => Promise<T>): Promise<T>
+}
+
 /**
  * Registra uma chamada de IA do usuário (função consume_ai_quota no banco).
- * Se a cota do dia acabou, interrompe com uma mensagem amigável.
+ * Se a cota do dia do app acabou, interrompe com uma mensagem amigável.
  */
-export async function consumeQuota(supabase: SupabaseClient, feature: string) {
+export async function consumeQuota(supabase: SupabaseClient, feature: string): Promise<Quota> {
   const limit = dailyLimit()
   const { data, error } = await supabase.rpc('consume_ai_quota', { p_feature: feature, p_daily_limit: limit })
   if (error) {
@@ -26,5 +36,18 @@ export async function consumeQuota(supabase: SupabaseClient, feature: string) {
       'limite_diario',
     )
   }
-  return { used: row.used as number, limit }
+  return {
+    used: row.used as number,
+    limit,
+    async guard(run) {
+      try {
+        return await run()
+      } catch (err) {
+        const { error: refundErr } = await supabase.rpc('refund_ai_quota', { p_feature: feature })
+        if (refundErr) console.error('[cota] estorno', refundErr)
+        else console.info(`[cota] chamada de ${feature} falhou: não contou na cota`)
+        throw err
+      }
+    },
+  }
 }

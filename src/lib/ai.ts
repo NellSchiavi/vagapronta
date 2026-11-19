@@ -17,6 +17,8 @@ export class AiError extends Error {
   constructor(
     message: string,
     public code: string,
+    /** segundos sugeridos para tentar de novo (limite por minuto) */
+    public retryAfter?: number,
   ) {
     super(message)
   }
@@ -32,8 +34,8 @@ export async function invokeAi<T>(name: string, body: Record<string, unknown>): 
 
   if (error instanceof FunctionsHttpError) {
     try {
-      const payload = (await error.context.json()) as { error?: string; code?: string; msg?: string }
-      if (payload?.error) throw new AiError(payload.error, payload.code ?? 'erro')
+      const payload = (await error.context.json()) as { error?: string; code?: string; msg?: string; retry_after?: number }
+      if (payload?.error) throw new AiError(payload.error, payload.code ?? 'erro', payload.retry_after)
       if (error.context.status === 401) throw new AiError('Sua sessão expirou. Entre de novo para continuar.', 'sessao')
     } catch (e) {
       if (e instanceof AiError) throw e

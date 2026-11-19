@@ -103,7 +103,7 @@ Deno.serve(
       throw new HttpError(422, 'Seu currículo está quase vazio. Envie o PDF de novo ou cole o texto completo.', 'texto_curto')
     }
 
-    await consumeQuota(supabase, 'analisar-curriculo')
+    const quota = await consumeQuota(supabase, 'analisar-curriculo')
 
     // dados pessoais não saem do servidor: vão marcadores e voltam os valores originais
     const redacted = redactPersonalData(clip(text))
@@ -123,7 +123,7 @@ Deno.serve(
       '"""',
     ].join('\n')
 
-    const raw = await generateJson({
+    const raw = await quota.guard(() => generateJson({
       task: 'analisar-curriculo',
       system: ANALYZE_SYSTEM,
       prompt,
@@ -131,7 +131,7 @@ Deno.serve(
       temperature: 0.3,
       tier: 'standard',
       mock: () => mockAnalysis(text, content.sections?.experiencias?.[0]?.descricao, Boolean(content.sections?.resumo)),
-    })
+    }))
     // nenhum número inventado chega à tela: o que não está no currículo vira [X]
     raw.suggestions = raw.suggestions.map((s) => ({ ...s, depois: guardInventedNumbers(s.depois, [redacted.text, prompt]) }))
     const analysis = redacted.restore(raw)

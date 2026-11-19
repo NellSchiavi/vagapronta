@@ -11,6 +11,8 @@ interface Props {
   startedAt?: number
   status?: AiTaskStatus
   onRetry?: () => void
+  /** status "waiting": quando a nova tentativa automática acontece */
+  retryAt?: number
   className?: string
 }
 
@@ -23,7 +25,7 @@ const progressAt = (ms: number) => Math.min(95, Math.round(95 * (1 - Math.exp(-m
  * Progresso de uma ação da IA: etapas com marcação, barra de progresso,
  * aviso de que pode levar até 1 minuto e de que dá para continuar usando o app.
  */
-export function AiProgress({ steps, startedAt, status = 'running', onRetry, className }: Props) {
+export function AiProgress({ steps, startedAt, status = 'running', onRetry, retryAt, className }: Props) {
   const [now, setNow] = useState(() => Date.now())
   const [start] = useState(() => startedAt ?? Date.now())
   useEffect(() => {
@@ -34,6 +36,26 @@ export function AiProgress({ steps, startedAt, status = 'running', onRetry, clas
   const elapsed = Math.max(0, now - start)
   const current = Math.min(steps.length - 1, Math.floor(elapsed / STEP_MS))
   const pct = progressAt(elapsed)
+
+  if (status === 'waiting') {
+    const secs = retryAt ? Math.max(0, Math.ceil((retryAt - now) / 1000)) : null
+    return (
+      <div role="status" aria-live="polite" className={cn('flex flex-col items-center gap-3 rounded-card border border-line bg-card px-6 py-10 text-center', className)}>
+        <span className="inline-flex size-14 items-center justify-center rounded-full bg-track text-muted">
+          <Hourglass className="size-6" aria-hidden />
+        </span>
+        <p className="font-serif text-xl">Muita gente usando a IA agora</p>
+        <p className="max-w-md text-[15px] text-muted">
+          Tentando de novo em instantes{secs ? ` (${secs}s)` : ''}. Você não precisa fazer nada, e isso não conta no seu limite do dia.
+        </p>
+        {onRetry && (
+          <Button variant="secondary" onClick={onRetry} className="mt-2">
+            <RotateCw aria-hidden /> Tentar agora
+          </Button>
+        )}
+      </div>
+    )
+  }
 
   if (status === 'slow') {
     return (

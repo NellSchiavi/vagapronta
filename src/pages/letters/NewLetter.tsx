@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Download, PenLine, RotateCw, Save, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AiProgress } from '@/components/ai/ai-progress'
+import { AiUsageNote } from '@/components/ai/ai-usage-note'
 import { downloadLetterPdf, letterFileName } from '@/components/pdf/letter-pdf'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -71,7 +72,7 @@ function redoLetter(meta: LetterMeta, tone: LetterTone) {
 export function NewLetter() {
   const task = useAiTask<GeneratedLetter, LetterMeta>(LETTER_TASK)
   if (task && task.status !== 'done') {
-    return <AiProgress steps={STEPS} startedAt={task.startedAt} status={task.status} onRetry={task.retry} />
+    return <AiProgress steps={STEPS} startedAt={task.startedAt} status={task.status} retryAt={task.retryAt} onRetry={task.retry} />
   }
   if (task?.status === 'done' && task.result && task.meta) return <DraftLetter letter={task.result} meta={task.meta} />
   return <LetterForm />
@@ -194,7 +195,8 @@ function LetterForm() {
         )}
       </div>
 
-      <div className="mt-6 flex justify-end">
+      <div className="mt-6 flex flex-col-reverse items-center gap-3 sm:flex-row sm:justify-end">
+        <AiUsageNote />
         <Button size="lg" onClick={submit} className="w-full sm:w-auto">
           <PenLine aria-hidden /> Escrever carta
         </Button>

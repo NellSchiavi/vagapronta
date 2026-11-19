@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { cleanJobUrl } from '@/lib/links'
 import { ArrowRight, ExternalLink, Link2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -34,7 +35,8 @@ export function SmartSearch({ roles, destinations, city, workModes }: Props) {
       setError('Cole o link completo da vaga (começa com https://).')
       return
     }
-    navigate(`/adaptar?link=${encodeURIComponent(url)}`)
+    // sem rastreamento nem tokens (o link de e-mails de alerta traz até token de login)
+    navigate(`/adaptar?link=${encodeURIComponent(cleanJobUrl(url))}`)
   }
 
   return (

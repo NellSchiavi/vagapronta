@@ -8,6 +8,7 @@ import { z } from 'npm:zod@3.24.1'
 import { generateJson } from '../_shared/ai.ts'
 import { requireUser } from '../_shared/auth.ts'
 import { fetchJobFromUrl } from '../_shared/fetch-job.ts'
+import { cleanJobUrl } from '../_shared/links.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import { promptRules } from '../_shared/paises.ts'
 import { redactPersonalData } from '../_shared/privacy.ts'
@@ -92,7 +93,8 @@ Deno.serve(
     const { supabase, user } = await requireUser(req)
     const resumeId = typeof body.resume_id === 'string' ? body.resume_id : null
     const jobId = typeof body.job_id === 'string' ? body.job_id : null
-    const jobUrl = typeof body.job_url === 'string' ? body.job_url.trim() : ''
+    // sem rastreamento nem tokens (otpToken, trackingId…)
+    const jobUrl = typeof body.job_url === 'string' && body.job_url.trim() ? cleanJobUrl(body.job_url) : ''
     let jobText = typeof body.job_text === 'string' ? body.job_text.trim() : ''
     if (!resumeId) throw new HttpError(400, 'Escolha qual currículo adaptar.', 'sem_curriculo')
 
@@ -130,7 +132,7 @@ Deno.serve(
     const t0 = Date.now()
     const step = (s: string) => console.info(`[adaptar-vaga] ${s} (+${Date.now() - t0}ms)`)
     step(`vaga com ${jobText.length} caracteres`)
-    await consumeQuota(supabase, 'adaptar-vaga')
+    const quota = await consumeQuota(supabase, 'adaptar-vaga')
     step('cota ok')
 
     const resumeText = resumeToText(content)
@@ -157,7 +159,7 @@ Deno.serve(
       '"""',
     ].join('\n')
 
-    const raw = await generateJson({
+    const raw = await quota.guard(() => generateJson({
       task: 'adaptar-vaga',
       system: ADAPT_SYSTEM,
       prompt,
@@ -165,7 +167,7 @@ Deno.serve(
       temperature: 0.35,
       tier: 'standard',
       mock: () => mockAdaptation(resumeText, jobText, content.sections?.experiencias?.[0]?.descricao),
-    })
+    }))
     step('resposta da IA validada')
     // nenhum número inventado chega à tela: o que não está no currículo nem no anúncio vira [X]
     raw.mudancas = raw.mudancas.map((m) => ({ ...m, depois: guardInventedNumbers(m.depois, [prompt]) }))

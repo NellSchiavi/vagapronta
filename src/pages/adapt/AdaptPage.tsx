@@ -74,7 +74,7 @@ export function AdaptPage() {
       )
     }
     if (task && task.status !== 'done') {
-      return <AiProgress steps={ADAPT_STEPS} startedAt={task.startedAt} status={task.status} onRetry={task.retry} />
+      return <AiProgress steps={ADAPT_STEPS} startedAt={task.startedAt} status={task.status} retryAt={task.retryAt} onRetry={task.retry} />
     }
     if (task?.status === 'done' && task.result) {
       return (
@@ -97,6 +97,13 @@ export function AdaptPage() {
         defaultBaseId={principal.id}
         jobId={jobId}
         initialUrl={params.get('link')}
+        initialText={params.get('texto')}
+        onInitialUsed={() => {
+          const next = new URLSearchParams(params)
+          next.delete('link')
+          next.delete('texto')
+          setParams(next, { replace: true })
+        }}
         onClearJob={() => setParams({}, { replace: true })}
       />
     )
