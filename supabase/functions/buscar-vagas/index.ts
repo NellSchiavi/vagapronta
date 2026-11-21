@@ -15,8 +15,9 @@ import { distributeSearch } from '../_shared/destinos.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import type { ResumeContent } from '../_shared/resume.ts'
 import { exampleJobs } from '../_shared/vagas/exemplo.ts'
+import { areaAdjustment, detectProfessions, knownAreas, searchTerms } from '../_shared/vagas/areas.ts'
 import { keySourcesMissing, queriesFor, type SourceQuery } from '../_shared/vagas/fontes.ts'
-import { estimateMatch, isExcluded, remoteFromBrazil, requiredLanguage, visaSponsorship, type FoundJob } from '../_shared/vagas/regras.ts'
+import { englishQuery, estimateMatch, isExcluded, normalize, remoteFromBrazil, requiredLanguage, visaSponsorship, type FoundJob } from '../_shared/vagas/regras.ts'
 
 /** vagas novas por busca, divididas entre os destinos */
 const PER_RUN = 30
@@ -76,7 +77,7 @@ interface RunResult {
 async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'agendada' | 'manual', memo: Map<string, Promise<FoundJob[]>>): Promise<RunResult> {
   const [{ data: prefs }, { data: profile }, { data: dests }, { data: resume }] = await Promise.all([
     admin.from('job_preferences').select('*').eq('user_id', userId).maybeSingle(),
-    admin.from('profiles').select('desired_role, city').eq('user_id', userId).maybeSingle(),
+    admin.from('profiles').select('desired_role, city, registry_council').eq('user_id', userId).maybeSingle(),
     admin.from('job_destinations').select('country_code').eq('user_id', userId).order('priority'),
     admin.from('resumes').select('content').eq('user_id', userId).eq('is_principal', true).maybeSingle(),
   ])
@@ -93,6 +94,11 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
   const resumeText = s
     ? [...s.habilidades, ...s.cursos, ...s.experiencias.map((e) => `${e.cargo} ${e.descricao ?? ''}`)].join('\n')
     : (content.raw_text ?? '')
+  // áreas (areas.ts): termos de busca por país, peso da área preferida e vagas fora da área no fim
+  const chosenAreas: string[] = prefs?.areas ?? []
+  const preferred: string | null = prefs?.preferred_area ?? null
+  const professions = detectProfessions([...roles, ...chosenAreas, profile?.registry_council])
+  const areas = knownAreas(chosenAreas)
   const match = { roles, resumeText, include: prefs?.keywords_include ?? [], workModes: prefs?.work_modes ?? [], seniority: prefs?.seniority ?? [] }
 
   // o que a pessoa já tem (inclusive descartadas) não volta
@@ -108,7 +114,8 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
   for (const { code: dest, count } of distributeSearch(PER_RUN, destinations)) {
     const missingKeys = keySourcesMissing(dest)
     let pool: FoundJob[] = []
-    for (const q of queriesFor(dest, roles, city)) {
+    const terms = searchTerms(dest, roles, chosenAreas, preferred, (s) => englishQuery(s) || normalize(s))
+    for (const q of queriesFor(dest, terms, city)) {
       try {
         const jobs = await cached(admin, q, memo)
         pool.push(...jobs)
@@ -140,15 +147,18 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
         const text = `${j.title}\n${j.description}`
         const remote = remoteFromBrazil(j)
         const lang = requiredLanguage(text)
-        return { j, remote, lang, visa: visaSponsorship(text, j.visa_sponsorship), m: estimateMatch(j, match) }
+        const m = estimateMatch(j, match)
+        const adj = areaAdjustment(j, areas, preferred, professions)
+        return { j, remote, lang, visa: visaSponsorship(text, j.visa_sponsorship), m, adj, score: Math.max(20, Math.min(95, m.score + adj.delta)) }
       })
       // para o Brasil, vaga remota que não aceita quem mora aqui não serve
       .filter((x) => !(dest === 'BR' && x.remote === false))
       .filter((x) => x.m.score >= MIN_SCORE)
-      .sort((a, b) => b.m.score - a.m.score)
+      // fora da área (ex.: engenharia biomédica para biomédica) vai para o fim
+      .sort((a, b) => Number(a.adj.offTopic) - Number(b.adj.offTopic) || b.score - a.score)
       .slice(0, count)
 
-    for (const { j, remote, lang, visa, m } of ranked) {
+    for (const { j, remote, lang, visa, m, adj, score } of ranked) {
       known.add(`${j.source}:${j.external_id}`)
       sources[j.source] = (sources[j.source] ?? 0) + 1
       rows.push({
@@ -163,8 +173,14 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
         source_url: j.source_url || null,
         description: j.description,
         salary: j.salary,
-        compatibility: m.score,
-        match_notes: { estimada: true, termos: m.terms, ...(j.example ? { exemplo: true } : {}) },
+        compatibility: score,
+        match_notes: {
+          estimada: true,
+          termos: m.terms,
+          ...(adj.area ? { area: adj.area } : {}),
+          ...(adj.offTopic ? { fora_da_area: true } : {}),
+          ...(j.example ? { exemplo: true } : {}),
+        },
         status: 'nova',
         published_at: j.published_at,
         destination: dest,

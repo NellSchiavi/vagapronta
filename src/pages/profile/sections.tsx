@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Plus, ShieldCheck, Trash2 } from 'lucide-react'
+import { Check, Plus, ShieldCheck, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { detectProfessions, normalize, type Profession } from '@/lib/job-areas'
 import { COUNTRY_GROUPS, PAISES } from '@/lib/paises'
 import { CAREER_STAGES, type CareerStage, type Certification, type ProfileLink } from '@/lib/profile'
 import {
@@ -59,6 +60,7 @@ export interface PrefsDraft {
   blocked_companies: string[]
   languages: LanguageSkill[]
   suggestions: ProfileSuggestions
+  preferred_area: string | null
 }
 
 interface SugProps {
@@ -390,13 +392,135 @@ export function QualificationsSection({ d, set, status, sugg, accept, dismiss }:
 // ---------------------------------------------------- o que estou procurando
 const AREA_HINTS = ['Saúde', 'Análises clínicas', 'Tecnologia', 'Dados', 'Administrativo', 'Educação', 'Indústria', 'Pesquisa', 'Vendas', 'Atendimento']
 
-export function SearchSection({ p, set, status, sugg, accept, dismiss }: { p: PrefsDraft; set: (x: Partial<PrefsDraft>) => void; status: SaveState } & SugProps) {
+const sameText = (a: string, b: string) => normalize(a.trim()) === normalize(b.trim())
+
+/** localStorage pode não existir (aba anônima, dados bloqueados): nunca quebra a tela */
+function readFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1'
+  } catch {
+    return false
+  }
+}
+function writeFlag(key: string) {
+  try {
+    localStorage.setItem(key, '1')
+  } catch {
+    /* só não lembra da escolha */
+  }
+}
+
+/**
+ * Áreas de uma profissão (areas.ts). Sem nenhuma escolhida: sugestão com todas
+ * marcadas, para aceitar ou desmarcar. Depois: chips das áreas e a área preferida.
+ */
+function ProfessionAreas({ profession, p, set }: { profession: Profession; p: PrefsDraft; set: (x: Partial<PrefsDraft>) => void }) {
+  const labels = profession.areas.map((a) => a.label)
+  const chosen = labels.filter((l) => p.areas.some((x) => sameText(x, l)))
+  const others = p.areas.filter((x) => !labels.some((l) => sameText(x, l)))
+  const flagKey = `vp-areas-sugestao-${profession.id}`
+  const [dismissed, setDismissed] = useState(() => readFlag(flagKey))
+  const [picks, setPicks] = useState<string[]>(labels)
+
+  const setChosen = (next: string[]) => {
+    const keepPreferred = p.preferred_area && next.some((l) => sameText(l, p.preferred_area!))
+    set({ areas: [...others, ...next], preferred_area: keepPreferred ? p.preferred_area : next.length === 1 ? next[0] : null })
+  }
+
+  if (!chosen.length && !dismissed) {
+    return (
+      <div className="rounded-card-sm border border-info/25 bg-info-soft p-4">
+        <p className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-xs font-medium text-info">
+          <Sparkles className="size-3" aria-hidden /> sugerido
+        </p>
+        <p className="mt-2 text-[15px] font-medium">Áreas de {profession.label.toLowerCase()}</p>
+        <p className="text-sm text-muted">Já deixamos todas marcadas. Desmarque o que não quiser e toque em “Usar estas áreas”.</p>
+        <div className="mt-3">
+          <ToggleChips id={`pref-areas-sug-${profession.id}`} label="Áreas sugeridas" options={labels.map((l) => ({ value: l, label: l }))} values={picks} onChange={setPicks} />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button onClick={() => picks.length && setChosen(picks)} disabled={!picks.length}>
+            <Check aria-hidden /> Usar estas áreas
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              writeFlag(flagKey)
+              setDismissed(true)
+            }}
+          >
+            Agora não
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <ToggleChips
+        id={`pref-areas-${profession.id}`}
+        label={`Áreas de ${profession.label.toLowerCase()}`}
+        options={profession.areas.map((a) => ({ value: a.label, label: a.label }))}
+        values={chosen}
+        onChange={setChosen}
+      />
+      {chosen.length > 1 && (
+        <div>
+          <ToggleChips
+            id={`pref-area-preferida-${profession.id}`}
+            label="Área preferida"
+            single
+            options={chosen.map((l) => ({ value: l, label: l }))}
+            values={chosen.filter((l) => p.preferred_area && sameText(l, p.preferred_area))}
+            onChange={(v) => set({ preferred_area: v[0] ?? null })}
+          />
+          <p className="mt-1 text-[13px] text-muted">As vagas dessa área aparecem primeiro na lista.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Palavras que a profissão costuma excluir (ex.: estética, para biomédicas de laboratório) */
+function AvoidSuggestion({ profession, p, set }: { profession: Profession; p: PrefsDraft; set: (x: Partial<PrefsDraft>) => void }) {
+  const flagKey = `vp-excluir-sugestao-${profession.id}`
+  const [dismissed, setDismissed] = useState(() => readFlag(flagKey))
+  const missing = profession.avoid.filter((w) => !p.keywords_exclude.some((x) => sameText(x, w)))
+  // só sugere enquanto nenhuma delas foi adicionada (se a pessoa tirou alguma, respeita)
+  if (dismissed || !missing.length || missing.length < profession.avoid.length) return null
+  return (
+    <SuggestedBadge
+      value={<>Esconder vagas de {missing.slice(0, 3).join(', ')} e parecidas</>}
+      onAccept={() => set({ keywords_exclude: [...p.keywords_exclude, ...missing] })}
+      onDismiss={() => {
+        writeFlag(flagKey)
+        setDismissed(true)
+      }}
+    />
+  )
+}
+
+export function SearchSection({ p, set, status, sugg, accept, dismiss, registry }: { p: PrefsDraft; set: (x: Partial<PrefsDraft>) => void; status: SaveState; registry?: string | null } & SugProps) {
+  const professions = detectProfessions([...p.desired_roles, ...p.areas, registry])
+  const professionLabels = professions.flatMap((pr) => pr.areas.map((a) => a.label))
+  const freeAreas = p.areas.filter((x) => !professionLabels.some((l) => sameText(x, l)))
   return (
     <SectionCard id="procura" title="O que estou procurando" description="É a base da busca diária de vagas e da compatibilidade." status={status}>
       <div id="pref-cargos" className="scroll-mt-24">
         <ChipsInput id="pref-cargos-input" label="Cargos que você procura" values={p.desired_roles} onChange={(desired_roles) => set({ desired_roles })} aiSuggestions={sugg.cargos} placeholder="Ex.: Biomédica, Analista de Laboratório" />
       </div>
-      <ChipsInput id="pref-areas" label="Áreas de interesse" values={p.areas} onChange={(areas) => set({ areas })} aiSuggestions={sugg.areas} suggestions={AREA_HINTS} />
+      {professions.map((pr) => (
+        <ProfessionAreas key={pr.id} profession={pr} p={p} set={set} />
+      ))}
+      <ChipsInput
+        id="pref-areas"
+        label={professions.length ? 'Outras áreas de interesse' : 'Áreas de interesse'}
+        values={freeAreas}
+        onChange={(next) => set({ areas: [...p.areas.filter((x) => professionLabels.some((l) => sameText(x, l))), ...next] })}
+        aiSuggestions={sugg.areas}
+        suggestions={AREA_HINTS}
+      />
       <div>
         <ToggleChips<Seniority>
           id="pref-nivel"
@@ -456,7 +580,12 @@ export function SearchSection({ p, set, status, sugg, accept, dismiss }: { p: Pr
         )}
       </fieldset>
       <ChipsInput id="pref-incluir" label="Palavras-chave para incluir" values={p.keywords_include} onChange={(keywords_include) => set({ keywords_include })} />
-      <ChipsInput id="pref-excluir" label="Palavras-chave para excluir" hint="Vagas com essas palavras não aparecem." values={p.keywords_exclude} onChange={(keywords_exclude) => set({ keywords_exclude })} />
+      <div>
+        <ChipsInput id="pref-excluir" label="Palavras-chave para excluir" hint="Vagas com essas palavras não aparecem." values={p.keywords_exclude} onChange={(keywords_exclude) => set({ keywords_exclude })} />
+        {professions.map((pr) => (
+          <AvoidSuggestion key={pr.id} profession={pr} p={p} set={set} />
+        ))}
+      </div>
       <ChipsInput id="pref-bloqueadas" label="Empresas que não quero ver" values={p.blocked_companies} onChange={(blocked_companies) => set({ blocked_companies })} />
       <LanguagesEditor values={p.languages} onChange={(languages) => set({ languages })} sugg={sugg} accept={accept} dismiss={dismiss} />
     </SectionCard>

@@ -93,6 +93,7 @@ function toPrefsDraft(p: JobPreferences): PrefsDraft {
     keywords_exclude: p.keywords_exclude,
     blocked_companies: p.blocked_companies,
     languages: p.languages ?? [],
+    preferred_area: p.preferred_area ?? null,
     suggestions: p.suggestions ?? {},
   }
 }
@@ -315,7 +316,7 @@ function ProfileEditor({ profile, prefs }: { profile: Profile; prefs: JobPrefere
       <CareerSection d={d} set={setProfile} status={profileStatus} {...sugProps} />
       <QualificationsSection d={d} set={setProfile} status={profileStatus} {...sugProps} />
       <DestinationsSection />
-      <SearchSection p={p} set={setPrefs} status={prefsStatus} {...sugProps} />
+      <SearchSection p={p} set={setPrefs} status={prefsStatus} registry={d.registry_council} {...sugProps} />
       <NotificationsSection d={d} set={setProfile} status={profileStatus} />
       <AccountSection />
     </div>

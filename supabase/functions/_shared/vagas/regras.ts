@@ -218,9 +218,10 @@ export function estimateMatch(job: Pick<FoundJob, 'title' | 'description' | 'wor
   return { score: Math.max(20, Math.min(95, Math.round(raw))), terms: found.slice(0, 8) }
 }
 
-/** Vaga que a pessoa não quer ver (palavra proibida ou empresa bloqueada) */
+/** Vaga que a pessoa não quer ver (palavra proibida no título, empresa ou anúncio, ou empresa bloqueada) */
 export function isExcluded(job: Pick<FoundJob, 'title' | 'description' | 'company'>, exclude: string[], blocked: string[]): boolean {
-  const text = normalize(`${job.title} ${job.description}`)
+  // a empresa também conta (ex.: "Clínica Estética Fulana")
+  const text = normalize(`${job.title} ${job.company ?? ''} ${job.description}`)
   if (exclude.some((w) => w.trim() && text.includes(normalize(w.trim())))) return true
   const company = normalize(job.company ?? '')
   return Boolean(company) && blocked.some((b) => b.trim() && company.includes(normalize(b.trim())))

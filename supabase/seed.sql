@@ -83,7 +83,10 @@ where user_id = '5eed0000-0000-4000-8000-00000000000b';
 
 update public.job_preferences set
   desired_roles = array['Biomédica', 'Analista de Laboratório'],
-  areas = array['Análises clínicas', 'Controle de qualidade', 'Pesquisa'],
+  -- as 4 áreas da biomedicina de laboratório (areas.ts); a preferida pesa mais na ordenação
+  areas = array['Laboratório', 'Gestão', 'Qualidade', 'Pesquisa clínica'],
+  preferred_area = 'Laboratório',
+  keywords_exclude = array['estética', 'esteta', 'harmonização', 'injetáveis', 'micropigmentação'],
   seniority = array['junior', 'pleno'],
   work_modes = array['presencial', 'hibrido'],
   cities = array['São Paulo, SP', 'Guarulhos, SP'],

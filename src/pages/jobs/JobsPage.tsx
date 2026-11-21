@@ -10,6 +10,7 @@ import { LoadingCards } from '@/components/ui/skeleton'
 import { showAiError } from '@/lib/ai'
 import { countryInfo, type CountryCode } from '@/lib/paises'
 import { detectAreas } from '@/lib/area-sites'
+import { jobAreas, knownAreas } from '@/lib/job-areas'
 import { registryLine, useProfile } from '@/lib/profile'
 import { useDestinations } from '@/lib/queries/destinations'
 import { rankScore, runJobSearch, SOURCE_LABEL, useLastSearch, useSuggestedJobs } from '@/lib/queries/jobs'
@@ -34,6 +35,7 @@ export function JobsPage() {
   const { data: profile } = useProfile()
   const { data: last } = useLastSearch()
   const [filter, setFilter] = useState<CountryCode | 'todas'>('todas')
+  const [areaFilter, setAreaFilter] = useState<string>('todas')
   const [busy, setBusy] = useState(false)
 
   const dests: CountryCode[] = destinations?.length ? destinations : ['BR']
@@ -51,7 +53,17 @@ export function JobsPage() {
     for (const j of ranked) if (j.destination) c[j.destination] = (c[j.destination] ?? 0) + 1
     return c
   }, [ranked])
-  const visible = filter === 'todas' ? ranked : ranked.filter((j) => j.destination === filter)
+  const byDest = filter === 'todas' ? ranked : ranked.filter((j) => j.destination === filter)
+  // áreas escolhidas nas preferências (areas.ts); a área da vaga vem da busca ou é calculada aqui
+  const chosenAreas = useMemo(() => knownAreas(prefs?.areas ?? []), [prefs?.areas])
+  const areaOf = (j: (typeof ranked)[number]) =>
+    j.match_notes?.fora_da_area ? null : (j.match_notes?.area ?? jobAreas(j, chosenAreas)[0]?.id ?? null)
+  const areaCounts: Record<string, number> = {}
+  for (const j of byDest) {
+    const a = areaOf(j)
+    if (a) areaCounts[a] = (areaCounts[a] ?? 0) + 1
+  }
+  const visible = areaFilter === 'todas' ? byDest : byDest.filter((j) => areaOf(j) === areaFilter)
   // destinos com vagas, na ordem de preferência (e os que não estão mais na lista no fim)
   const chipDests = [...dests, ...Object.keys(counts).filter((c) => !dests.includes(c as CountryCode))] as CountryCode[]
 
@@ -110,7 +122,7 @@ export function JobsPage() {
                 {last ? `Última busca: ${lastSearchText(last.created_at)}` : 'Ainda não buscamos vagas para você.'}
               </p>
               <p className="text-muted">
-                Buscando por {roles.slice(0, 2).join(' e ')} ·{' '}
+                Buscando por {chosenAreas.length ? chosenAreas.map((a) => a.label).join(', ') : roles.slice(0, 2).join(' e ')} ·{' '}
                 <Link to="/perfil?campo=destinos" className="underline underline-offset-2 hover:text-ink">
                   mudar
                 </Link>
@@ -137,6 +149,19 @@ export function JobsPage() {
                       label={`${dests.includes(d) && dests.length > 1 ? `${dests.indexOf(d) + 1}º ` : ''}${countryInfo(d).name}`}
                       count={counts[d]}
                     />
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {ranked.length > 0 && chosenAreas.length > 1 && (
+            <div className="-mx-4 -mt-3 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="group" aria-label="Filtrar por área">
+              <div className="flex w-max gap-2 pb-1">
+                <FilterChip active={areaFilter === 'todas'} onClick={() => setAreaFilter('todas')} label="Todas as áreas" count={byDest.length} />
+                {chosenAreas
+                  .filter((a) => areaCounts[a.id] || areaFilter === a.id)
+                  .map((a) => (
+                    <FilterChip key={a.id} active={areaFilter === a.id} onClick={() => setAreaFilter(a.id)} label={a.label} count={areaCounts[a.id] ?? 0} />
                   ))}
               </div>
             </div>

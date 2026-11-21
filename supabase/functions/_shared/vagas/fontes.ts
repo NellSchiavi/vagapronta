@@ -12,6 +12,7 @@
  * da vaga na fonte, e o botão de candidatura usa o link original, sem alterar.
  */
 import { htmlToText } from '../fetch-job.ts'
+import type { SearchTerm } from './areas.ts'
 import { englishQuery, normalize, type FoundJob } from './regras.ts'
 
 const UA = 'VagaPronta/1.0 (app pessoal de busca de emprego; uso nao comercial)'
@@ -314,16 +315,18 @@ function jooble(dest: string, role: string, city: string | null): SourceQuery | 
 export const keySourcesMissing = (dest: string) => (joobleKey(dest) ? [] : ['jooble'])
 
 /**
- * Consultas para um destino. Usa no máximo 2 cargos (para poupar as fontes);
- * em fontes em inglês, o cargo é traduzido (ex.: "Analista de Dados" → "data analyst").
+ * Consultas para um destino. Recebe os termos já escolhidos (areas.ts: searchTerms,
+ * no máximo 5) ou, sem eles, usa os 2 primeiros cargos. A Jooble recebe o termo
+ * no idioma do país; as fontes em inglês (vagas remotas), no máximo 3 termos em inglês.
  */
-export function queriesFor(dest: string, roles: string[], city: string | null): SourceQuery[] {
-  const top = roles.slice(0, 2)
+export function queriesFor(dest: string, roles: string[] | SearchTerm[], city: string | null): SourceQuery[] {
+  const terms: SearchTerm[] = roles.map((r) =>
+    typeof r === 'string' ? { local: r, en: englishQuery(r) || normalize(r) } : r,
+  )
   const out: (SourceQuery | null)[] = []
-  for (const role of top) {
-    const en = englishQuery(role) || normalize(role)
-    out.push(jobicy(dest, en), himalayas(dest, en), jooble(dest, role, city))
-  }
+  const english = [...new Set(terms.map((t) => normalize(t.en)).filter(Boolean))].slice(0, 3)
+  for (const en of english) out.push(jobicy(dest, en), himalayas(dest, en))
+  for (const t of terms) out.push(jooble(dest, t.local, city))
   out.push(arbeitnow(dest), remotive(dest))
   // sem repetir a mesma consulta (ex.: dois cargos que viram o mesmo termo)
   const seen = new Set<string>()

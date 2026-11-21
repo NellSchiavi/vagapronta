@@ -23,6 +23,10 @@ export interface MatchNotes {
   termos?: string[]
   /** vaga de exemplo (fonte ainda não ligada) */
   exemplo?: boolean
+  /** área da vaga (id em areas.ts), calculada na busca */
+  area?: string
+  /** parecida no nome, mas de outra área (ex.: engenharia biomédica): fica no fim */
+  fora_da_area?: boolean
 }
 
 export type Job = Omit<Row<'jobs'>, 'source' | 'status' | 'work_mode' | 'match_notes'> & {

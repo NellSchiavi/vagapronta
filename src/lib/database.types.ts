@@ -93,14 +93,14 @@ isOneToOne: false
                   ]
                 },"job_preferences": {
                   Row: {
-                    "areas": (string)[],"blocked_companies": (string)[],"cities": (string)[],"contract_types": (string)[],"created_at": string,"desired_roles": (string)[],"keywords_exclude": (string)[],"keywords_include": (string)[],"languages": NonNullable<Json>,"open_to_relocate": boolean,"salary_currency": string,"salary_max": number | null,"salary_min": number | null,"seniority": (string)[],"suggestions": NonNullable<Json>,"updated_at": string,"user_id": string,"work_modes": (string)[]
+                    "areas": (string)[],"blocked_companies": (string)[],"cities": (string)[],"contract_types": (string)[],"created_at": string,"desired_roles": (string)[],"keywords_exclude": (string)[],"keywords_include": (string)[],"languages": NonNullable<Json>,"open_to_relocate": boolean,"preferred_area": string | null,"salary_currency": string,"salary_max": number | null,"salary_min": number | null,"seniority": (string)[],"suggestions": NonNullable<Json>,"updated_at": string,"user_id": string,"work_modes": (string)[]
                   }
                   ComputedFields: never
                   Insert: {
-                    "areas"?: (string)[],"blocked_companies"?: (string)[],"cities"?: (string)[],"contract_types"?: (string)[],"created_at"?: string,"desired_roles"?: (string)[],"keywords_exclude"?: (string)[],"keywords_include"?: (string)[],"languages"?: NonNullable<Json>,"open_to_relocate"?: boolean,"salary_currency"?: string,"salary_max"?: number | null,"salary_min"?: number | null,"seniority"?: (string)[],"suggestions"?: NonNullable<Json>,"updated_at"?: string,"user_id"?: string,"work_modes"?: (string)[]
+                    "areas"?: (string)[],"blocked_companies"?: (string)[],"cities"?: (string)[],"contract_types"?: (string)[],"created_at"?: string,"desired_roles"?: (string)[],"keywords_exclude"?: (string)[],"keywords_include"?: (string)[],"languages"?: NonNullable<Json>,"open_to_relocate"?: boolean,"preferred_area"?: string | null,"salary_currency"?: string,"salary_max"?: number | null,"salary_min"?: number | null,"seniority"?: (string)[],"suggestions"?: NonNullable<Json>,"updated_at"?: string,"user_id"?: string,"work_modes"?: (string)[]
                   }
                   Update: {
-                    "areas"?: (string)[],"blocked_companies"?: (string)[],"cities"?: (string)[],"contract_types"?: (string)[],"created_at"?: string,"desired_roles"?: (string)[],"keywords_exclude"?: (string)[],"keywords_include"?: (string)[],"languages"?: NonNullable<Json>,"open_to_relocate"?: boolean,"salary_currency"?: string,"salary_max"?: number | null,"salary_min"?: number | null,"seniority"?: (string)[],"suggestions"?: NonNullable<Json>,"updated_at"?: string,"user_id"?: string,"work_modes"?: (string)[]
+                    "areas"?: (string)[],"blocked_companies"?: (string)[],"cities"?: (string)[],"contract_types"?: (string)[],"created_at"?: string,"desired_roles"?: (string)[],"keywords_exclude"?: (string)[],"keywords_include"?: (string)[],"languages"?: NonNullable<Json>,"open_to_relocate"?: boolean,"preferred_area"?: string | null,"salary_currency"?: string,"salary_max"?: number | null,"salary_min"?: number | null,"seniority"?: (string)[],"suggestions"?: NonNullable<Json>,"updated_at"?: string,"user_id"?: string,"work_modes"?: (string)[]
                   }
                   Relationships: [
                     
