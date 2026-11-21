@@ -27,7 +27,9 @@ export interface AdaptMeta {
 }
 
 /** erros que pertencem a um campo (o resto aparece num aviso com "Tentar de novo") */
-const URL_CODES = new Set(['link_ilegivel', 'link_invalido', 'site_bloqueado'])
+const URL_CODES = new Set(['link_ilegivel', 'link_invalido', 'site_bloqueado', 'link_protegido', 'vaga_encerrada'])
+/** o link não foi lido: vale ensinar a trazer o texto (celular) ou usar o botão (computador) */
+const UNREAD_CODES = new Set(['link_ilegivel', 'link_protegido', 'site_bloqueado'])
 const TEXT_CODES = new Set(['vaga_curta'])
 /** texto do anúncio editado por vaga (memória da sessão) */
 const jobTextMemory = new Map<string, string>()
@@ -246,7 +248,16 @@ export function AdaptForm({ bases, defaultBaseId, jobId, initialUrl, initialText
               </div>
             </div>
           )}
-          <p className="hidden text-[13px] text-muted lg:block">
+          {aiError && UNREAD_CODES.has(aiError.code) && !draft.text.trim() && (
+            <div className="flex items-start gap-2.5 rounded-card-sm border border-line bg-track/60 p-3 text-sm lg:hidden" role="status">
+              <Info className="mt-0.5 size-4 shrink-0 text-terra" aria-hidden />
+              <p>
+                No celular: abra a vaga, toque e segure no texto do anúncio, escolha <strong className="font-medium">Selecionar tudo</strong> e{' '}
+                <strong className="font-medium">Copiar</strong>. Depois cole no campo “Cole aqui o anúncio da vaga”, acima.
+              </p>
+            </div>
+          )}
+          <p className={cn('hidden text-[13px] lg:block', aiError && UNREAD_CODES.has(aiError.code) ? 'font-medium text-ink' : 'text-muted')}>
             Usa o computador?{' '}
             <Link to="/instalar-botao" className="font-medium text-terra-strong underline underline-offset-2">
               Instale o botão “Enviar para o VagaPronta”
