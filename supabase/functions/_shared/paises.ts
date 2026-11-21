@@ -46,6 +46,23 @@ export interface CountryInfo {
   europass: boolean
   /** texto obrigatório ou costumeiro no rodapé do currículo */
   footer?: { language: string; text: string }
+  /** regras aplicadas no editor e nos PDFs (tabela FORMAT, abaixo) */
+  format: CountryFormat
+}
+
+export type SectionKey = 'resumo' | 'experiencias' | 'formacao' | 'habilidades' | 'idiomas'
+/** dados pessoais extras que alguns países esperam no currículo */
+export type PersonalField = 'nascimento' | 'cidadania' | 'autorizacao'
+
+export interface CountryFormat {
+  /** número de páginas recomendado (acima disso, o editor avisa) */
+  maxPages: number
+  /** dados pessoais extras permitidos ali (o resto nunca aparece) */
+  personalFields: PersonalField[]
+  /** ordem das seções no PDF */
+  sectionOrder: SectionKey[]
+  /** termina com "cidade, data" (costume alemão: Ort, Datum) */
+  placeAndDate?: boolean
 }
 
 const L = {
@@ -59,7 +76,7 @@ const L = {
   nl: { code: 'nl', label: 'Holandês' },
 } satisfies Record<string, Language>
 
-export const PAISES: CountryInfo[] = [
+const BASE: Omit<CountryInfo, 'format'>[] = [
   // ---------------------------------------------------------------- destaques
   {
     code: 'BR',
@@ -288,6 +305,32 @@ export const PAISES: CountryInfo[] = [
     europass: false,
   },
 ]
+
+const ORDER_DEFAULT: SectionKey[] = ['resumo', 'experiencias', 'formacao', 'habilidades', 'idiomas']
+// no Europass os idiomas vêm logo depois da formação
+const ORDER_EUROPASS: SectionKey[] = ['resumo', 'experiencias', 'formacao', 'idiomas', 'habilidades']
+const ALL: PersonalField[] = ['nascimento', 'cidadania', 'autorizacao']
+const ONLY_PERMIT: PersonalField[] = ['autorizacao']
+
+/** Regras de formato por país (tamanho, dados pessoais, ordem das seções) */
+const FORMAT: Record<CountryCode, CountryFormat> = {
+  BR: { maxPages: 2, personalFields: [], sectionOrder: ORDER_DEFAULT },
+  EU: { maxPages: 3, personalFields: ALL, sectionOrder: ORDER_EUROPASS },
+  US: { maxPages: 1, personalFields: ONLY_PERMIT, sectionOrder: ORDER_DEFAULT },
+  PT: { maxPages: 2, personalFields: ALL, sectionOrder: ORDER_EUROPASS },
+  IT: { maxPages: 2, personalFields: ALL, sectionOrder: ORDER_EUROPASS },
+  ES: { maxPages: 2, personalFields: ALL, sectionOrder: ORDER_DEFAULT },
+  FR: { maxPages: 1, personalFields: ['nascimento', 'autorizacao'], sectionOrder: ORDER_DEFAULT },
+  DE: { maxPages: 2, personalFields: ALL, sectionOrder: ORDER_DEFAULT, placeAndDate: true },
+  CH: { maxPages: 2, personalFields: ALL, sectionOrder: ORDER_DEFAULT },
+  IE: { maxPages: 2, personalFields: ONLY_PERMIT, sectionOrder: ORDER_DEFAULT },
+  GB: { maxPages: 2, personalFields: ONLY_PERMIT, sectionOrder: ORDER_DEFAULT },
+  NL: { maxPages: 2, personalFields: ONLY_PERMIT, sectionOrder: ORDER_DEFAULT },
+  BE: { maxPages: 2, personalFields: ALL, sectionOrder: ORDER_EUROPASS },
+  CA: { maxPages: 2, personalFields: ONLY_PERMIT, sectionOrder: ORDER_DEFAULT },
+}
+
+export const PAISES: CountryInfo[] = BASE.map((c) => ({ ...c, format: FORMAT[c.code] }))
 
 export const COUNTRY_CODES = PAISES.map((p) => p.code)
 export const FEATURED = PAISES.filter((p) => p.featured)

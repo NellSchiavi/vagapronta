@@ -4,10 +4,11 @@ import { invokeAi } from '@/lib/ai'
 import { queryClient } from '@/lib/query-client'
 import type { CountryCode } from '@/lib/countries'
 import type { Resume, ResumeContent, ResumeSections, ResumeSource, ResumeTemplate } from '@/lib/resume'
+import type { ResumeLanguage } from '@/lib/resume-i18n'
 import { asJson, supabase } from '@/lib/supabase'
 import type { AnalysisSuggestion, ResumeAnalysis } from '@/lib/types'
 
-const RESUME_FIELDS = 'id, user_id, title, template, country, content, source, file_path, is_principal, job_id, created_at, updated_at'
+const RESUME_FIELDS = 'id, user_id, title, template, country, language, content, source, file_path, is_principal, job_id, created_at, updated_at'
 
 export function useResumes() {
   const { user } = useAuth()
@@ -173,13 +174,18 @@ export function useInvalidateResumes() {
 // ---------------------------------------------------------------------------
 
 /** Grava o que a pessoa editou (nome da versão, modelo e seções) */
-export async function saveResumeEdits(resumeId: string, edits: { title: string; template: ResumeTemplate; content: ResumeContent }) {
+export async function saveResumeEdits(
+  resumeId: string,
+  edits: { title: string; template: ResumeTemplate; content: ResumeContent; country?: CountryCode; language?: ResumeLanguage },
+) {
   const { error } = await supabase
     .from('resumes')
     .update({
       title: edits.title.trim() || 'Currículo',
       template: edits.template,
       content: asJson(edits.content),
+      ...(edits.country ? { country: edits.country } : {}),
+      ...(edits.language ? { language: edits.language } : {}),
     })
     .eq('id', resumeId)
   if (error) throw error
@@ -187,15 +193,19 @@ export async function saveResumeEdits(resumeId: string, edits: { title: string; 
 }
 
 /** "Salvar como nova versão": uma cópia com outro nome (a original fica como estava) */
-export async function duplicateResume(from: Resume, edits: { title: string; template: ResumeTemplate; content: ResumeContent }) {
+export async function duplicateResume(
+  from: Resume,
+  edits: { title: string; template: ResumeTemplate; content: ResumeContent; country?: CountryCode; language?: ResumeLanguage; source?: ResumeSource },
+) {
   const { data, error } = await supabase
     .from('resumes')
     .insert({
       title: edits.title.trim() || `${from.title} (cópia)`,
       template: edits.template,
-      country: from.country,
+      country: edits.country ?? from.country,
+      language: edits.language ?? from.language ?? 'pt-BR',
       content: asJson(edits.content),
-      source: 'editor',
+      source: edits.source ?? 'editor',
       is_principal: false,
     })
     .select('id')
@@ -214,4 +224,26 @@ export interface ImproveSuggestion {
 /** "Melhorar com IA" de uma parte do currículo (só sugere; a tela decide se usa) */
 export function improveSection(input: { tipo: ImproveKind; texto: string; cargo_alvo?: string; contexto?: { cargo?: string; empresa?: string } }) {
   return invokeAi<{ sugestao: ImproveSuggestion }>('melhorar-secao', input).then((r) => r.sugestao)
+}
+
+export interface Translation {
+  titulo: string
+  resumo: string
+  experiencias: { cargo: string; descricao: string }[]
+  habilidades: string[]
+  idiomas: string[]
+  registro_nota: string
+  avisos: string[]
+}
+
+/** Tradução de uma versão pela IA (só devolve; a tela cria a nova versão se a pessoa confirmar) */
+export function translateResume(input: {
+  idioma: ResumeLanguage
+  idioma_origem: ResumeLanguage
+  pais: CountryCode
+  titulo?: string
+  conselho?: string
+  secoes: { resumo: string; experiencias: { cargo: string; descricao: string }[]; habilidades: string[]; idiomas: string[] }
+}) {
+  return invokeAi<{ traducao: Translation }>('traduzir-curriculo', input).then((r) => r.traducao)
 }

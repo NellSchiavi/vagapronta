@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { FilePlus2, PenLine, RefreshCw } from 'lucide-react'
+import { FilePlus2, Languages, PenLine, RefreshCw } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { LoadingCards } from '@/components/ui/skeleton'
-import { shortDate } from '@/lib/dates'
+import { shortDate, toISODate } from '@/lib/dates'
 import { friendlyDataError } from '@/lib/errors'
+import { countryInfo } from '@/lib/paises'
 import { useResumes } from '@/lib/queries/resumes'
 import type { Resume } from '@/lib/resume'
+import { LANGUAGE_LABEL } from '@/lib/resume-i18n'
 import { AnalysisPanel } from './AnalysisPanel'
 import { OrganizePanel } from './OrganizePanel'
 import { UploadResumeCard } from './UploadResumeCard'
@@ -33,6 +35,13 @@ export function ResumePage() {
                 <Button asChild>
                   <Link to={`/curriculo/editar?id=${selected.id}`}>
                     <PenLine aria-hidden /> Editar e escolher modelo
+                  </Link>
+                </Button>
+              )}
+              {selected?.content.sections && (
+                <Button asChild variant="secondary">
+                  <Link to={`/curriculo/editar?id=${selected.id}&versao=outro`}>
+                    <Languages aria-hidden /> Versão para outro país
                   </Link>
                 </Button>
               )}
@@ -89,7 +98,9 @@ function VersionSelect({ resumes, value, onChange }: { resumes: Resume[]; value:
         {resumes.map((r) => (
           <option key={r.id} value={r.id}>
             {r.title}
-            {r.is_principal ? ' (principal)' : r.job_id ? ' (adaptado para vaga)' : ''} · {shortDate(r.updated_at.slice(0, 10)).replace(/\.$/, '')}
+            {r.is_principal ? ' (principal)' : r.job_id ? ' (adaptado para vaga)' : ''} · {countryInfo(r.country).name}
+            {r.language && r.language !== 'pt-BR' ? `, ${LANGUAGE_LABEL[r.language]}` : ''} ·{' '}
+            {shortDate(toISODate(new Date(r.updated_at))).replace(/\.$/, '')}
           </option>
         ))}
       </select>

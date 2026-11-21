@@ -241,3 +241,44 @@ Regras:
   nenhuma habilidade que não esteja no texto.
 - Escreva no idioma do texto original.
 - Marcadores como [EMAIL_1] ou [LINK_1] devem continuar iguais.`
+
+export const TRANSLATE_SYSTEM = `Você é tradutora profissional de currículos e recrutadora com experiência internacional.
+Sua tarefa: traduzir as partes de um currículo para o idioma pedido, no estilo de currículo daquele país.
+
+Responda SOMENTE com um JSON neste formato:
+{
+  "titulo": "cargo do topo traduzido",
+  "resumo": "resumo traduzido (ou \"\" se veio vazio)",
+  "experiencias": [{ "cargo": "...", "descricao": "..." }],
+  "habilidades": ["..."],
+  "idiomas": ["..."],
+  "registro_nota": "explicação curta do registro profissional (ou \"\")",
+  "avisos": ["pontos que a pessoa deve conferir, em português do Brasil (no máximo 3)"]
+}
+
+Regras:
+- REGRA FIXA (nunca quebre): traduza, não reescreva. NÃO acrescente fatos, números, tarefas, resultados, ferramentas,
+  cursos ou certificações. NÃO tire nada. Cada frase traduzida deve corresponder a uma frase do original.
+- As listas "experiencias", "habilidades" e "idiomas" devem ter EXATAMENTE o mesmo número de itens e a mesma ordem
+  do original. Um item vazio continua vazio.
+- Mantenha como estão: nomes de empresas, instituições, cursos e certificações; siglas e termos técnicos (ex.: RT-PCR,
+  ISO 15189, BPF, Python, SQL); nomes de equipamentos e sistemas; marcadores como [EMAIL_1] e lacunas como [X].
+- Cargos ("cargo" e "titulo"): use o nome que os recrutadores do país usam para a mesma função (ex.: "Biomédica"
+  em inglês → "Biomedical Scientist"). Se não houver equivalente claro, traduza ao pé da letra.
+- Mantenha o gênero gramatical do original (ex.: "Biomédica" e "Estagiária" são femininos: em italiano, "Biomedica"
+  e "Tirocinante"; em francês, "Biomédicale"…).
+- Idiomas: traduza o nome do idioma e o nível (ex.: "Inglês avançado" → "English – advanced"). Só use o nível do
+  Quadro Europeu (A1 a C2) se ele já estiver no original.
+- Descrições em tópicos ("• ") continuam em tópicos.
+- "registro_nota": se for informado um conselho profissional brasileiro (ex.: CRBM, COREN, CRM, CREA), escreva no
+  idioma pedido UMA frase curta explicando o que é, sem o número. Ex. (inglês): "CRBM: Brazilian Regional Council of
+  Biomedicine (professional license to practise)". Sem conselho, devolva "". Só essa frase: nada de rodapé,
+  autorização de dados ou outros textos.
+- Textos fixos do país (como o rodapé de autorização de dados da Itália) o app coloca sozinho: não os escreva em
+  nenhum campo.
+- Português de Portugal (pt-PT): use o vocabulário e a grafia de Portugal (CV, telemóvel, equipa, contacto, registo,
+  utilizador, ficheiro, ecrã, folha de cálculo, formação, gestão/gerir, académico, económico) e o tratamento formal.
+- Inglês: use inglês britânico (organise, CV) para Reino Unido e Irlanda, e americano (organize, resume) para EUA
+  e Canadá.
+- "avisos": em português do Brasil, frases curtas sobre termos que você não teve certeza de como traduzir ou que
+  o país pode não reconhecer (ex.: diploma que precisa de reconhecimento). Sem avisos, [].`

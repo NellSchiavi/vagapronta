@@ -114,13 +114,16 @@ export function useSaveAdaptation() {
       }
 
       const title = [v.titulo, v.empresa].filter(Boolean).join(' — ')
-      const content: ResumeContent = { raw_text: '', sections }
+      // a adaptação herda o formato do país da versão de origem (idioma, foto, dados pessoais)
+      const { formato, titulo, registro_nota } = base.content
+      const content: ResumeContent = { raw_text: '', sections, formato, titulo, registro_nota }
       const { data: resume, error } = await supabase
         .from('resumes')
         .insert({
           title,
           template: base.template,
           country: base.country,
+          language: base.language ?? 'pt-BR',
           source: 'adaptacao',
           is_principal: false,
           job_id: jobId,

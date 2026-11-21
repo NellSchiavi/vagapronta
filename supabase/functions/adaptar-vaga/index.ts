@@ -99,7 +99,7 @@ Deno.serve(
     if (!resumeId) throw new HttpError(400, 'Escolha qual currículo adaptar.', 'sem_curriculo')
 
     const [{ data: resume }, { data: profile }] = await Promise.all([
-      supabase.from('resumes').select('id, content, country').eq('id', resumeId).maybeSingle(),
+      supabase.from('resumes').select('id, content, country, language').eq('id', resumeId).maybeSingle(),
       supabase
         .from('profiles')
         .select('desired_role, career_stage, study_course, study_institution, study_period, study_expected_end')
@@ -141,6 +141,7 @@ Deno.serve(
     const prompt = [
       `Cargo que a pessoa procura: ${profile?.desired_role || 'não informado'}`,
       `País do currículo — ${promptRules(resume.country)}`,
+      resume.language && resume.language !== 'pt-BR' ? `Idioma desta versão do currículo: ${resume.language}. Escreva os textos sugeridos ("depois") nesse idioma.` : '',
       careerStageGuidance(profile?.career_stage, {
         curso: profile?.study_course,
         instituicao: profile?.study_institution,

@@ -12,17 +12,22 @@ import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { LoadingCards } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { shortDate } from '@/lib/dates'
+import { shortDate, toISODate } from '@/lib/dates'
 import { friendlyDataError } from '@/lib/errors'
 import { countGaps } from '@/lib/gaps'
-import { countryInfo } from '@/lib/paises'
+import { COUNTRY_CODES, countryInfo, type CountryCode } from '@/lib/paises'
 import { duplicateResume, saveResumeEdits, useResumes } from '@/lib/queries/resumes'
-import { resumeSearchText, type Resume, type ResumeSections, type ResumeTemplate } from '@/lib/resume'
+import { resumeSearchText, type Resume, type ResumeFormat, type ResumeSections, type ResumeTemplate } from '@/lib/resume'
+import { useAvatarDataUrl } from '@/lib/avatar-pdf'
+import { effectiveFormat, resumePdfData } from '@/lib/resume-format'
+import type { ResumeLanguage } from '@/lib/resume-i18n'
 import { cleanSections, emptySections } from '@/lib/resume-edit'
 import { useIsDesktop } from '@/lib/use-is-desktop'
 import { useSender } from '@/pages/letters/letter-parts'
+import { FormatCard } from './FormatCard'
 import { SectionEditors } from './SectionEditors'
 import { TemplatePicker } from './TemplatePicker'
+import { TranslateSheet } from './TranslateSheet'
 
 /** /curriculo/editar?id=… : editor por seções com a prévia do PDF ao lado */
 export function ResumeEditorPage() {
@@ -57,11 +62,31 @@ function Editor({ resume }: { resume: Resume }) {
   const [pages, setPages] = useState(1)
   const [downloading, setDownloading] = useState(false)
   const [copyOpen, setCopyOpen] = useState(false)
+  const [params, setParams] = useSearchParams()
+  // ?versao=PT abre direto "Criar versão para Portugal" (vindo de uma vaga de outro país)
+  const asked = params.get('versao')
+  const askedCountry = COUNTRY_CODES.find((c) => c === asked) ?? null
+  const [translateOpen, setTranslateOpen] = useState(Boolean(asked))
+  const [country, setCountry] = useState<CountryCode>(resume.country)
+  const [language, setLanguage] = useState<ResumeLanguage>(resume.language ?? 'pt-BR')
+  const [formato, setFormato] = useState<ResumeFormat>(resume.content.formato ?? {})
+  const [titulo, setTitulo] = useState(resume.content.titulo ?? '')
+  const [registryNote, setRegistryNote] = useState(resume.content.registro_nota ?? '')
+  const info = countryInfo(country)
 
   const clean = useMemo(() => (sections ? cleanSections(sections) : null), [sections])
-  const snapshot = JSON.stringify([title, template, clean])
+  const extras = { formato, titulo: titulo.trim() || undefined, registro_nota: registryNote.trim() || undefined }
+  const extrasKey = JSON.stringify(extras)
+  const snapshot = JSON.stringify([title, template, clean, country, language, extras])
   const lastSaved = useRef(
-    JSON.stringify([resume.title, resume.template ?? 'classico', resume.content.sections ? cleanSections(resume.content.sections) : null]),
+    JSON.stringify([
+      resume.title,
+      resume.template ?? 'classico',
+      resume.content.sections ? cleanSections(resume.content.sections) : null,
+      resume.country,
+      resume.language ?? 'pt-BR',
+      { formato: resume.content.formato ?? {}, titulo: resume.content.titulo?.trim() || undefined, registro_nota: resume.content.registro_nota?.trim() || undefined },
+    ]),
   )
   const pending = useRef<null | (() => Promise<void>)>(null)
 
@@ -72,6 +97,9 @@ function Editor({ resume }: { resume: Resume }) {
         title: string
         template: ResumeTemplate
         sections: ResumeSections
+        country: CountryCode
+        language: ResumeLanguage
+        extras: { formato: ResumeFormat; titulo?: string; registro_nota?: string }
       },
     ) => {
       setSaveState('saving')
@@ -79,7 +107,9 @@ function Editor({ resume }: { resume: Resume }) {
         await saveResumeEdits(resume.id, {
           title: edits.title,
           template: edits.template,
-          content: { ...resume.content, sections: edits.sections },
+          country: edits.country,
+          language: edits.language,
+          content: { ...resume.content, ...edits.extras, sections: edits.sections },
         })
         lastSaved.current = snap
         setSaveState('saved')
@@ -94,7 +124,7 @@ function Editor({ resume }: { resume: Resume }) {
   // salvamento automático: 1 segundo depois de parar de mexer
   useEffect(() => {
     if (!clean || snapshot === lastSaved.current) return
-    const edits = { title, template, sections: clean }
+    const edits = { title, template, sections: clean, country, language, extras: JSON.parse(extrasKey) as typeof extras }
     pending.current = () => save(snapshot, edits)
     setSaveState('saving')
     const t = window.setTimeout(() => {
@@ -102,22 +132,23 @@ function Editor({ resume }: { resume: Resume }) {
       void save(snapshot, edits)
     }, 1000)
     return () => window.clearTimeout(t)
-  }, [snapshot, clean, title, template, save])
+  }, [snapshot, clean, title, template, country, language, extrasKey, save])
 
   // ao sair do editor com algo ainda não salvo, salva na hora
   useEffect(() => () => void pending.current?.(), [])
 
+  const wantsPhoto = effectiveFormat(country, formato).photo
+  const hasPhoto = Boolean(sender.avatar && sender.avatar.source !== 'removida' && (sender.avatar.path || sender.avatar.url))
+  const photo = useAvatarDataUrl(sender.avatar, wantsPhoto)
+  const senderKey = JSON.stringify(sender)
   const pdfData = useMemo(
-    () => ({
-      name: sender.name,
-      role: sender.role,
-      registry: sender.registry,
-      contact: sender.contact,
-      sections: clean ?? emptySections(),
-      template,
-      footerNote: countryInfo(resume.country).footer?.text,
-    }),
-    [sender.name, sender.role, sender.registry, sender.contact, clean, template, resume.country],
+    () =>
+      resumePdfData(
+        { country, language, template, content: { ...resume.content, ...(JSON.parse(extrasKey) as typeof extras), sections: clean ?? emptySections() } },
+        JSON.parse(senderKey) as typeof sender,
+        { photo },
+      ),
+    [senderKey, clean, template, country, language, extrasKey, photo, resume.content],
   )
   const previewVersion = JSON.stringify(pdfData)
   // só nos textos (o JSON tem colchetes de lista que não são lacunas)
@@ -127,7 +158,7 @@ function Editor({ resume }: { resume: Resume }) {
   async function download() {
     setDownloading(true)
     try {
-      saveBlob(await buildResumePdf(pdfData), resumeFileName(sender.name))
+      saveBlob(await buildResumePdf(pdfData), resumeFileName(sender.name, null, language))
     } catch {
       toast.error('Não conseguimos gerar o PDF. Tente de novo.')
     } finally {
@@ -163,13 +194,20 @@ function Editor({ resume }: { resume: Resume }) {
         <Field
           label="Nome desta versão"
           htmlFor="ed-titulo"
-          hint={`Criada em ${shortDate(resume.created_at.slice(0, 10)).replace(/\.$/, '')}. Ajuda a achar depois (ex.: “Laboratório – hospitais”).`}
+          hint={`Criada em ${shortDate(toISODate(new Date(resume.created_at))).replace(/\.$/, '')}. Ajuda a achar depois (ex.: “Laboratório – hospitais”).`}
         >
           <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} />
         </Field>
+        <Field
+          label="Cargo no topo do currículo"
+          htmlFor="ed-cargo-topo"
+          hint={sender.role ? `Se ficar vazio, usamos o do Meu perfil: “${sender.role}”.` : 'Ex.: Biomédica. Se ficar vazio, usamos o do Meu perfil.'}
+        >
+          <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={120} placeholder={sender.role} />
+        </Field>
         <div>
           <p className="mb-2 text-sm font-medium">Modelo</p>
-          <TemplatePicker value={template} onChange={setTemplate} />
+          <TemplatePicker value={template} onChange={setTemplate} europass={info.europass} />
           <p className="mt-2 text-[13px] text-muted">
             Todos são lidos sem problema pelos sistemas de recrutamento (ATS). Trocar de modelo não muda o conteúdo.
           </p>
@@ -185,6 +223,23 @@ function Editor({ resume }: { resume: Resume }) {
           . Mude lá e o currículo acompanha.
         </p>
       </Card>
+      <FormatCard
+        country={country}
+        language={language}
+        onCountry={(c) => {
+          setCountry(c)
+          // o Europass só existe para países que usam esse formato
+          if (template === 'europass' && !countryInfo(c).europass) setTemplate('classico')
+        }}
+        onLanguage={setLanguage}
+        formato={formato}
+        onFormato={setFormato}
+        has={{ photo: hasPhoto, birthDate: Boolean(sender.birthDate), citizenship: sender.citizenships.length > 0 }}
+        registry={sender.registry}
+        registryNote={registryNote}
+        onRegistryNote={setRegistryNote}
+        onNewVersion={() => setTranslateOpen(true)}
+      />
       <SectionEditors resumeId={resume.id} sections={sections} onChange={setSections} targetRole={sender.role} />
     </div>
   )
@@ -192,9 +247,11 @@ function Editor({ resume }: { resume: Resume }) {
   const preview = (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span className={pages > 2 ? 'font-medium text-warn' : 'text-muted'}>
+        <span className={pages > info.format.maxPages ? 'font-medium text-warn' : 'text-muted'}>
           {pages === 1 ? '1 página' : `${pages} páginas`}
-          {pages > 2 ? ' · recrutadores preferem até 2' : ''}
+          {pages > info.format.maxPages
+            ? ` · para ${info.name}, o ideal é até ${info.format.maxPages === 1 ? '1 página' : `${info.format.maxPages} páginas`}`
+            : ''}
         </span>
         <Button size="sm" onClick={download} loading={downloading}>
           {!downloading && <Download aria-hidden />} Baixar PDF
@@ -254,6 +311,32 @@ function Editor({ resume }: { resume: Resume }) {
         </Tabs>
       )}
 
+      <Sheet
+        open={translateOpen}
+        onOpenChange={(o) => {
+          setTranslateOpen(o)
+          if (!o && asked) {
+            params.delete('versao')
+            setParams(params, { replace: true })
+          }
+        }}
+      >
+        {translateOpen && clean && (
+          <TranslateSheet
+            resume={{ ...resume, country, language, content: { ...resume.content, ...extras } }}
+            current={{ title, template, sections: clean, titulo }}
+            owner={sender}
+            initialCountry={askedCountry ?? undefined}
+            onCreate={async (v) => {
+              const id = await duplicateResume(resume, { ...v, source: v.translated ? 'traducao' : 'editor' })
+              setTranslateOpen(false)
+              toast.success(`Versão para ${countryInfo(v.country).name} criada. Agora você está editando ela; a original ficou como estava.`)
+              navigate(`/curriculo/editar?id=${id}`, { replace: true })
+            }}
+          />
+        )}
+      </Sheet>
+
       <Sheet open={copyOpen} onOpenChange={setCopyOpen}>
         {copyOpen && (
           <CopySheet
@@ -263,7 +346,9 @@ function Editor({ resume }: { resume: Resume }) {
               const id = await duplicateResume(resume, {
                 title: newTitle,
                 template,
-                content: { ...resume.content, sections: clean },
+                country,
+                language,
+                content: { ...resume.content, ...extras, sections: clean },
               })
               setCopyOpen(false)
               toast.success('Cópia criada. Agora você está editando a cópia; a original ficou como estava.')

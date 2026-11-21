@@ -27,8 +27,14 @@ export function useSender() {
     name: profile?.full_name?.trim() || 'Seu nome',
     role: profile?.desired_role ?? undefined,
     registry: registryLine(profile) || undefined,
+    registryCouncil: profile?.registry_council?.trim() || undefined,
     contact: [...new Set(contact)],
     place: profile?.city || c.cidade || undefined,
+    // só para currículos de países onde é costume (resume-format.ts)
+    residenceCountry: profile?.residence_country ?? 'BR',
+    birthDate: profile?.birth_date ?? null,
+    citizenships: profile?.citizenships ?? [],
+    avatar: profile ? { path: profile.avatar_path, url: profile.avatar_url, source: profile.avatar_source } : null,
   }
 }
 

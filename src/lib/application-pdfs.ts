@@ -2,35 +2,29 @@ import { buildLetterPdf, letterFileName } from '@/components/pdf/letter-pdf'
 import { buildResumePdf, resumeFileName } from '@/components/pdf/resume-pdf'
 import { saveBlob } from '@/components/pdf/pdf-kit'
 import { hasGaps } from '@/lib/gaps'
-import { countryInfo } from '@/lib/paises'
+import type { CountryCode } from '@/lib/paises'
 import type { ResumeContent, ResumeTemplate } from '@/lib/resume'
+import { loadAvatarDataUrl } from '@/lib/avatar-pdf'
+import { effectiveFormat, resumePdfData, type ResumeOwner } from '@/lib/resume-format'
+import type { ResumeLanguage } from '@/lib/resume-i18n'
 import { supabase } from '@/lib/supabase'
 
-export interface Sender {
-  name: string
-  role?: string
-  registry?: string
-  contact: string[]
-  place?: string
-}
+export type Sender = ResumeOwner
 
-/** Baixa o PDF do currículo de uma versão (gera pelas seções; se não houver, usa o PDF original) */
+/** Baixa o PDF do currículo de uma versão (gera pelas seções, no formato do país; se não houver, usa o PDF original) */
 export async function downloadResumeById(resumeId: string, sender: Sender, company?: string | null) {
-  const { data: r, error } = await supabase.from('resumes').select('content, file_path, country, template').eq('id', resumeId).single()
+  const { data: r, error } = await supabase.from('resumes').select('content, file_path, country, language, template').eq('id', resumeId).single()
   if (error) throw error
-  const content = r.content as unknown as ResumeContent
-  const fileName = resumeFileName(sender.name, company)
-  if (content.sections) {
-    const blob = await buildResumePdf({
-      name: sender.name,
-      role: sender.role,
-      registry: sender.registry,
-      contact: sender.contact,
-      sections: content.sections,
-      template: r.template as ResumeTemplate,
-      footerNote: countryInfo(r.country).footer?.text,
-    })
-    saveBlob(blob, fileName)
+  const resume = {
+    content: r.content as unknown as ResumeContent,
+    country: r.country as CountryCode,
+    language: r.language as ResumeLanguage,
+    template: r.template as ResumeTemplate,
+  }
+  const fileName = resumeFileName(sender.name, company, resume.language)
+  if (resume.content.sections) {
+    const photo = effectiveFormat(resume.country, resume.content.formato).photo ? await loadAvatarDataUrl(sender.avatar) : null
+    saveBlob(await buildResumePdf(resumePdfData(resume, sender, { photo })), fileName)
     return
   }
   if (r.file_path) {

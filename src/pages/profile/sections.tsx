@@ -25,6 +25,8 @@ export interface ProfileDraft {
   contact_email: string
   city: string
   residence_country: string
+  birth_date: string
+  citizenships: string[]
   linkedin_url: string
   links: ProfileLink[]
   career_stage: CareerStage | null
@@ -137,7 +139,80 @@ export function PersonalSection({
         {sugg.linkedin && <SuggestedBadge value={sugg.linkedin} onAccept={() => accept('linkedin')} onDismiss={() => dismiss('linkedin')} />}
       </div>
       <LinksEditor links={d.links} onChange={(links) => set({ links })} sugg={sugg} accept={accept} dismiss={dismiss} />
+      <AbroadFields d={d} set={set} />
     </SectionCard>
+  )
+}
+
+// países de cidadania mais comuns entre brasileiros (dupla cidadania) e destinos
+const CITIZENSHIP_CODES = [
+  'BR', 'PT', 'IT', 'ES', 'DE', 'FR', 'JP', 'PL', 'LB', 'AR', 'UY', 'PY', 'CL', 'US', 'GB', 'IE', 'NL', 'BE', 'CH',
+  'AT', 'LU', 'HR', 'GR', 'HU', 'CZ', 'UA', 'RU', 'SY', 'IL', 'CN', 'KR', 'CA', 'MX', 'CO', 'PE', 'BO', 'VE', 'AU',
+]
+
+function regionName(code: string) {
+  try {
+    return new Intl.DisplayNames(['pt-BR'], { type: 'region' }).of(code) ?? code
+  } catch {
+    return code
+  }
+}
+
+/** Data de nascimento e nacionalidade: só entram em currículos de países onde é costume */
+function AbroadFields({ d, set }: { d: ProfileDraft; set: (p: Partial<ProfileDraft>) => void }) {
+  const options = CITIZENSHIP_CODES.filter((c) => !d.citizenships.includes(c))
+    .map((c) => ({ code: c, name: regionName(c) }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+  return (
+    <fieldset className="space-y-3 rounded-card-sm bg-bg p-4">
+      <legend className="sr-only">Para currículos de outros países</legend>
+      <p className="text-sm font-medium" aria-hidden>
+        Para currículos de outros países (opcional)
+      </p>
+      <p className="-mt-2 text-[13px] text-muted">
+        Só aparecem nos países onde é costume (ex.: Alemanha, Itália, Portugal). No Brasil, nos EUA e no Reino Unido ficam de fora.
+      </p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="Data de nascimento" htmlFor="perfil-nascimento">
+          <Input type="date" value={d.birth_date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set({ birth_date: e.target.value })} />
+        </Field>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="perfil-cidadania" className="text-sm font-medium">
+            Nacionalidade
+          </label>
+          <select
+            id="perfil-cidadania"
+            value=""
+            onChange={(e) => e.target.value && set({ citizenships: [...d.citizenships, e.target.value] })}
+            className="min-h-touch rounded-field border border-line-strong bg-card px-3 text-[15px]"
+          >
+            <option value="">{d.citizenships.length ? 'Adicionar outra (dupla cidadania)' : 'Escolha o país'}</option>
+            {options.map((o) => (
+              <option key={o.code} value={o.code}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {d.citizenships.length > 0 && (
+        <ul className="flex flex-wrap gap-2" aria-label="Suas nacionalidades">
+          {d.citizenships.map((c) => (
+            <li key={c} className="inline-flex min-h-[36px] items-center gap-1 rounded-full border border-line-strong bg-card pl-3 text-sm">
+              {regionName(c)}
+              <button
+                type="button"
+                onClick={() => set({ citizenships: d.citizenships.filter((x) => x !== c) })}
+                className="inline-flex size-9 items-center justify-center rounded-full text-muted hover:text-ink"
+                aria-label={`Remover ${regionName(c)}`}
+              >
+                <Trash2 className="size-3.5" aria-hidden />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </fieldset>
   )
 }
 

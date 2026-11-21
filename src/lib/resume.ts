@@ -1,7 +1,8 @@
 import type { CountryCode } from '@/lib/countries'
+import type { ResumeLanguage } from '@/lib/resume-i18n'
 
-export type ResumeTemplate = 'classico' | 'moderno' | 'compacto' | 'geometrico'
-export type ResumeSource = 'pdf' | 'texto' | 'linkedin' | 'editor' | 'adaptacao'
+export type ResumeTemplate = 'classico' | 'moderno' | 'compacto' | 'geometrico' | 'europass'
+export type ResumeSource = 'pdf' | 'texto' | 'linkedin' | 'editor' | 'adaptacao' | 'traducao'
 
 export interface Experience {
   cargo: string
@@ -36,6 +37,23 @@ export interface ResumeContent {
   raw_text?: string
   /** seções organizadas; null enquanto o texto ainda não foi organizado */
   sections?: ResumeSections | null
+  /** cargo no topo desta versão (ex.: traduzido); vazio = o do perfil */
+  titulo?: string
+  /** escolhas de formato desta versão (foto e dados pessoais extras) */
+  formato?: ResumeFormat
+  /** explicação curta do registro profissional (ex.: CRBM) no idioma da versão */
+  registro_nota?: string
+  /** versão criada por tradução: de qual currículo e idioma veio */
+  traducao?: { de: string; idioma_original: string }
+}
+
+/** Escolhas da pessoa; o que o país não permite é ignorado (resume-format.ts) */
+export interface ResumeFormat {
+  foto?: boolean
+  nascimento?: boolean
+  cidadania?: boolean
+  /** texto livre, no idioma da versão (ex.: "EU citizen – no visa required") */
+  autorizacao?: string
 }
 
 export interface Resume {
@@ -44,6 +62,8 @@ export interface Resume {
   title: string
   template: ResumeTemplate
   country: CountryCode
+  /** idioma do conteúdo (pt-BR, pt-PT, en, it…) */
+  language: ResumeLanguage
   content: ResumeContent
   source: ResumeSource
   file_path: string | null

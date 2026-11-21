@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowUpRight, Check, FileText, Mail, Send, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Check, FileText, Globe2, Mail, Send, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { downloadLetterById, downloadResumeById } from '@/lib/application-pdfs'
 import { shortDate, toISODate } from '@/lib/dates'
 import { friendlyDataError } from '@/lib/errors'
+import { countryInfo } from '@/lib/paises'
 import { addApplicationForJob, markApplicationSent, useJobDocuments } from '@/lib/queries/applications'
+import { useResumes } from '@/lib/queries/resumes'
+import { countryForJob } from '@/lib/resume-format'
 import { refreshJobs } from '@/lib/queries/jobs'
 import { clearPendingApply, getPendingApply, PENDING_EVENT, setPendingApply, shouldAsk, type PendingApply } from '@/lib/pending-apply'
 import { isExampleJob, linkHost, openExternal, safeHttpUrl } from '@/lib/safe-link'
@@ -20,7 +23,7 @@ import { useSender } from '@/pages/letters/letter-parts'
  *  2. abre a página ORIGINAL da vaga em nova aba, onde a pessoa se inscreve;
  *  3. ao voltar, pergunta se ela se candidatou (ApplyReturnPrompt).
  */
-export function ApplyButton({ job }: { job: Pick<Job, 'id' | 'title' | 'company' | 'url' | 'source' | 'match_notes'> }) {
+export function ApplyButton({ job }: { job: Pick<Job, 'id' | 'title' | 'company' | 'url' | 'source' | 'match_notes' | 'destination'> }) {
   const [open, setOpen] = useState(false)
   const url = safeHttpUrl(job.url)
   if (!url || isExampleJob(job)) return null
@@ -30,13 +33,13 @@ export function ApplyButton({ job }: { job: Pick<Job, 'id' | 'title' | 'company'
         <Send aria-hidden /> Me candidatar
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        {open && <ApplySheet job={{ id: job.id, title: job.title, company: job.company, url }} onDone={() => setOpen(false)} />}
+        {open && <ApplySheet job={{ id: job.id, title: job.title, company: job.company, url, destination: job.destination }} onDone={() => setOpen(false)} />}
       </Sheet>
     </>
   )
 }
 
-type ApplyJob = Pick<Job, 'id' | 'title' | 'company'> & { url: string }
+type ApplyJob = Pick<Job, 'id' | 'title' | 'company' | 'destination'> & { url: string }
 
 function ApplySheet({ job, onDone }: { job: ApplyJob; onDone: () => void }) {
   const sender = useSender()
@@ -87,6 +90,7 @@ function ApplySheet({ job, onDone }: { job: ApplyJob; onDone: () => void }) {
         </p>
       }
     >
+      {!isLoading && <CountryVersionHint job={job} resumeId={docs?.resumeId ?? null} onDone={onDone} />}
       {isLoading ? (
         <p className="text-sm text-muted">Procurando seus arquivos para esta vaga…</p>
       ) : hasDocs ? (
@@ -136,6 +140,41 @@ function ApplySheet({ job, onDone }: { job: ApplyJob; onDone: () => void }) {
         </span>
       </p>
     </SheetContent>
+  )
+}
+
+/**
+ * Vaga de outro país: sugere "Criar versão para <país>" (ou mostra a versão
+ * que já existe), porque foto, dados pessoais e idioma mudam de país para país.
+ */
+function CountryVersionHint({ job, resumeId, onDone }: { job: ApplyJob; resumeId: string | null; onDone: () => void }) {
+  const { data: resumes } = useResumes()
+  const base = resumes?.find((r) => r.id === resumeId) ?? resumes?.find((r) => r.is_principal) ?? resumes?.[0]
+  const target = countryForJob(job.destination, base?.country)
+  if (!base || !target) return null
+  const name = countryInfo(target).name
+  const existing = resumes?.find((r) => r.country === target && r.content.sections)
+  return (
+    <div className="mb-5 rounded-card-sm border border-terra/30 bg-terra-soft/40 p-3 text-sm" role="note">
+      <p className="flex items-start gap-2">
+        <Globe2 className="mt-0.5 size-4 shrink-0 text-terra" aria-hidden />
+        <span>
+          Esta vaga é em <strong className="font-medium">{name}</strong>, e o currículo{resumeId ? ' desta vaga' : ''} está no formato{' '}
+          {countryInfo(base.country).name}. Lá, foto, dados pessoais e idioma seguem outras regras.
+        </span>
+      </p>
+      <Button asChild size="sm" variant="secondary" className="mt-2.5 w-full">
+        {existing ? (
+          <Link to={`/curriculo/editar?id=${existing.id}`} onClick={onDone}>
+            Ver minha versão para {name} (“{existing.title}”)
+          </Link>
+        ) : (
+          <Link to={`/curriculo/editar?id=${base.id}&versao=${target}`} onClick={onDone}>
+            Criar versão para {name}
+          </Link>
+        )}
+      </Button>
+    </div>
   )
 }
 

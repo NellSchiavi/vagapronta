@@ -15,6 +15,15 @@ function Thumb({ id }: { id: ResumeTemplate }) {
   return (
     <span aria-hidden className="relative block aspect-[210/297] w-full overflow-hidden rounded-[4px] bg-white ring-1 ring-line">
       {id === 'moderno' && <span className="block h-[22%] bg-terra" />}
+      {id === 'europass' && (
+        <span className="flex gap-1.5 p-2.5 pb-0">
+          <span className="block h-5 w-4 shrink-0 bg-ink/15" />
+          <span className="flex flex-1 flex-col gap-[3px] pt-0.5">
+            <span className="block h-[4px] w-3/4 rounded bg-[#1D4E89]" />
+            {lines(2)}
+          </span>
+        </span>
+      )}
       {id === 'geometrico' && (
         <>
           <span className="absolute -right-3 -top-3 size-9 rounded-full bg-terra-soft" />
@@ -22,16 +31,26 @@ function Thumb({ id }: { id: ResumeTemplate }) {
         </>
       )}
       <span className={cn('flex flex-col', id === 'compacto' ? 'gap-1.5 p-1.5' : 'gap-2 p-2.5', id === 'moderno' && 'pt-2')}>
-        {id !== 'moderno' && <span className={cn('block rounded bg-ink/70', id === 'compacto' ? 'h-[4px] w-1/2' : 'h-[5px] w-3/5')} />}
+        {id !== 'moderno' && id !== 'europass' && (
+          <span className={cn('block rounded bg-ink/70', id === 'compacto' ? 'h-[4px] w-1/2' : 'h-[5px] w-3/5')} />
+        )}
+        {id === 'europass' && <span className="block h-[2px] w-full bg-[#1D4E89]" />}
         {id === 'classico' && <span className="block h-[2px] w-4 bg-terra" />}
         {id === 'compacto' && <span className="block h-px w-full bg-terra" />}
         {[0, 1, 2].map((k) => (
           <span key={k} className="flex flex-col gap-1">
             <span className={cn('flex items-center gap-1', id === 'moderno' && 'text-terra')}>
               {id === 'geometrico' && <span className="size-[4px] rotate-45 bg-terra" />}
-              <span className={cn('block h-[3px] w-1/3 rounded', id === 'moderno' ? 'bg-terra' : 'bg-ink/50')} />
+              <span className={cn('block h-[3px] w-1/3 rounded', id === 'moderno' ? 'bg-terra' : id === 'europass' ? 'bg-[#1D4E89]' : 'bg-ink/50')} />
             </span>
-            {lines(id === 'compacto' ? 4 : 3, id === 'compacto' ? 'gap-[2px]' : 'gap-[3px]')}
+            {id === 'europass' ? (
+              <span className="flex gap-1">
+                <span className="block h-[2px] w-1/4 rounded bg-ink/25" />
+                <span className="flex-1">{lines(2)}</span>
+              </span>
+            ) : (
+              lines(id === 'compacto' ? 4 : 3, id === 'compacto' ? 'gap-[2px]' : 'gap-[3px]')
+            )}
           </span>
         ))}
       </span>
@@ -39,10 +58,20 @@ function Thumb({ id }: { id: ResumeTemplate }) {
   )
 }
 
-export function TemplatePicker({ value, onChange }: { value: ResumeTemplate; onChange: (t: ResumeTemplate) => void }) {
+export function TemplatePicker({
+  value,
+  onChange,
+  europass = false,
+}: {
+  value: ResumeTemplate
+  onChange: (t: ResumeTemplate) => void
+  /** o país usa o formato Europass (mostra esse modelo também) */
+  europass?: boolean
+}) {
+  const list = TEMPLATES.filter((t) => !t.europassOnly || europass)
   return (
-    <div role="radiogroup" aria-label="Modelo do currículo" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {TEMPLATES.map((t) => {
+    <div role="radiogroup" aria-label="Modelo do currículo" className={cn('grid grid-cols-2 gap-2', list.length > 4 ? 'sm:grid-cols-3 xl:grid-cols-5' : 'sm:grid-cols-4')}>
+      {list.map((t) => {
         const active = t.id === value
         return (
           <button

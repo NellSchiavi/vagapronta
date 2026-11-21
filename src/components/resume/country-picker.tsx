@@ -242,7 +242,7 @@ export function CountryDetails({
           </div>
           {current !== 'pt-BR' && (
             <p className="mt-2 text-[13px] text-muted">
-              Você pode continuar escrevendo em português. Em breve, a IA vai poder traduzir seu currículo para esse idioma.
+              Você pode continuar escrevendo em português. Depois, no editor do currículo, a IA cria uma versão traduzida para esse idioma, sem mexer na original.
             </p>
           )}
         </fieldset>
