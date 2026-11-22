@@ -27,6 +27,10 @@ describe('profissões e termos de busca', () => {
     expect(pt).toContain('técnico de análises clínicas')
     expect(pt).toContain('ensaios clínicos')
     expect(searchTerms('US', ['Biomédica'], ['Pesquisa clínica'], null, englishQuery)[0].local).toBe('clinical research associate')
+    // gestão sempre ligada ao laboratório clínico (sem isso vinha laboratório industrial)
+    const gestao = searchTerms('BR', [], ['Gestão'], 'Gestão', englishQuery).map((t) => t.local)
+    expect(gestao).toEqual(['coordenador de análises clínicas', 'responsável técnico laboratório clínico'])
+    expect(jobAreas(job('Supervisor(a) de Laboratório Clínico'), areas)[0].id).toBe('gestao')
   })
 
   it('sem áreas conhecidas, busca pelos 2 primeiros cargos (como antes)', () => {

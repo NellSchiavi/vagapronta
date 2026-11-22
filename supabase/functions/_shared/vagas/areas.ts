@@ -75,12 +75,21 @@ export const PROFESSIONS: Profession[] = [
         label: 'Gestão',
         description: 'Coordenação, supervisão e responsabilidade técnica do laboratório',
         terms: {
-          BR: ['coordenador de laboratório', 'supervisor técnico de laboratório', 'gerente de laboratório', 'responsável técnico laboratório'],
-          PT: ['coordenador de laboratório', 'gestor de laboratório', 'diretor técnico laboratório', 'responsável de laboratório'],
-          en: ['laboratory manager', 'laboratory supervisor'],
+          // sempre com "clínico"/"análises clínicas": sem isso a busca traz laboratório industrial
+          BR: [
+            'coordenador de análises clínicas', 'responsável técnico laboratório clínico', 'supervisor de laboratório clínico',
+            'líder técnico laboratório clínico', 'gestão da qualidade laboratorial', 'gerente de laboratório clínico',
+          ],
+          PT: [
+            'coordenador de laboratório de análises clínicas', 'diretor técnico laboratório análises clínicas',
+            'responsável técnico laboratório clínico', 'gestor de laboratório clínico',
+          ],
+          en: ['clinical laboratory manager', 'clinical laboratory supervisor'],
         },
         signals: [
           'coordenador de laboratorio', 'coordenadora de laboratorio', 'supervisor tecnico', 'supervisora tecnica', 'gerente de laboratorio',
+          'coordenador de analises clinicas', 'coordenadora de analises clinicas', 'supervisor de laboratorio', 'supervisora de laboratorio',
+          'gestao da qualidade laboratorial', 'gestor da qualidade laboratorial',
           'responsavel tecnic', 'gestor de laboratorio', 'gestora de laboratorio', 'diretor tecnico', 'diretora tecnica', 'lider tecnic',
           'laboratory manager', 'lab manager', 'laboratory supervisor',
         ],
