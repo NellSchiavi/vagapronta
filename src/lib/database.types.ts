@@ -207,10 +207,16 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "consume_ai_quota":
+            "agendar_busca_diaria":
+{ Args: { "project_url": string }; Returns: string
+                           },
+"consume_ai_quota":
 { Args: { "p_daily_limit"?: number,"p_feature": string }; Returns: {
               "allowed": boolean,"daily_limit": number,"used": number
             }[]
+                           },
+"cron_secret_ok":
+{ Args: { "secret": string }; Returns: boolean
                            },
 "refund_ai_quota":
 { Args: { "p_feature": string }; Returns: number

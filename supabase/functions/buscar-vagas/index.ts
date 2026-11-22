@@ -1,7 +1,9 @@
 /**
  * POST /buscar-vagas
  *  - pela tela ("Buscar agora"): com o JWT da pessoa; até 5 buscas manuais por dia.
- *  - pelo agendamento diário (pg_cron): cabeçalho x-cron-secret = CRON_SECRET;
+ *  - pelo agendamento diário (pg_cron): cabeçalho x-cron-secret com o segredo gerado
+ *    no Vault (migração 20261124000100; conferido por public.cron_secret_ok) ou,
+ *    se configurado, igual ao secret CRON_SECRET;
  *    busca para todas as pessoas que concluíram o início.
  *
  * Distribui a busca pelos destinos na ordem de preferência (pesos em
@@ -206,13 +208,22 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
   return result
 }
 
+/** Chamada do agendamento diário? (segredo do Vault ou, se existir, o secret CRON_SECRET) */
+async function isCronCall(admin: SupabaseClient, header: string | null): Promise<boolean> {
+  if (!header) return false
+  const envSecret = Deno.env.get('CRON_SECRET')
+  if (envSecret && header === envSecret) return true
+  const { data, error } = await admin.rpc('cron_secret_ok', { secret: header })
+  if (error) console.warn(`[buscar-vagas] conferir agendamento: ${error.message}`)
+  return data === true
+}
+
 Deno.serve(
   handle(async (req) => {
     const admin = adminClient()
     const memo = new Map<string, Promise<FoundJob[]>>()
 
-    const secret = Deno.env.get('CRON_SECRET')
-    if (secret && req.headers.get('x-cron-secret') === secret) {
+    if (await isCronCall(admin, req.headers.get('x-cron-secret'))) {
       const { data: people } = await admin.from('profiles').select('user_id').not('onboarded_at', 'is', null)
       let ok = 0
       for (const p of people ?? []) {

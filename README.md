@@ -6,7 +6,9 @@ App pessoal de busca de emprego: analise o currículo, adapte para cada vaga, ge
 - **Backend:** Supabase (login, banco Postgres, arquivos e funções), no plano gratuito.
 - **IA:** Google Gemini, chamado só pelas funções do Supabase. A chave nunca vai para o navegador.
 
-> Algumas seções abaixo ainda estão marcadas como **(em construção)**. Elas serão completadas ao longo do desenvolvimento.
+**App publicado:** https://nellschiavi.github.io/vagapronta/
+
+Tudo roda no plano gratuito (GitHub Pages, Supabase Free, Gemini sem faturamento, fontes de vagas gratuitas).
 
 ---
 
@@ -155,7 +157,14 @@ O **link** do e-mail não funciona no celular nesse modo de teste (ele aponta pa
 
 Em **Instalar botão no navegador** (menu do avatar), a pessoa arrasta o botão para a barra de favoritos do Chrome ou do Edge. Numa página de vaga (LinkedIn, Gupy, Indeed, site da empresa), o favorito lê só o que está na tela (título, empresa, texto e o link limpo) e abre o VagaPronta em Adaptar já preenchido. Os dados vão no endereço do app, depois do `#`, e essa parte não é enviada a nenhum servidor. O código fica em `src/lib/bookmarklet/enviar-vaga.js`. Se o endereço do app mudar (por exemplo, ao publicar), é preciso instalar o botão de novo a partir do app publicado.
 
-## 2. Criar o projeto no Supabase (em construção)
+## 2. Criar o projeto no Supabase
+
+1. Entre em https://supabase.com/dashboard e clique em **New project**.
+2. **Name:** `vagapronta`. **Database Password:** clique em **Generate a password** e guarde num gerenciador de senhas (o app não precisa dela). **Region:** *South America (São Paulo)*. **Plano:** Free.
+3. Espere o projeto ficar pronto (1 a 2 minutos). O endereço do projeto aparece em **Project Settings → Data API** (`https://<ref>.supabase.co`); o `<ref>` também está no endereço do painel.
+4. A chave pública (**anon** ou **publishable**) fica em **Project Settings → API Keys**. Ela vai para o navegador e pode ser publicada. A chave **service_role / secret** nunca vai para o app nem para o GitHub.
+
+No computador, uma vez: `npx supabase login` (abre o navegador para autorizar a CLI).
 
 ## 3. Login por e-mail na nuvem
 
@@ -229,9 +238,9 @@ O app aceita tanto o **link** quanto o **código de 6 dígitos** do e-mail, que 
 
 Os dois modelos usam `{{ .ConfirmationURL }}` (o link) e `{{ .Token }}` (o código). No ambiente local, eles já são aplicados automaticamente pelo `supabase/config.toml`.
 
-## 4. Ativar login com LinkedIn
+## 4. Login com LinkedIn (desligado por enquanto)
 
-Enquanto isso não for feito, o botão "Entrar com LinkedIn" e o "Conectar LinkedIn" (em Meu perfil) mostram um aviso de "em breve". O login por e-mail funciona normalmente.
+O login com LinkedIn está **desligado** na versão publicada. Enquanto ele não for configurado, o botão "Entrar com LinkedIn" e o "Conectar LinkedIn" (em Meu perfil) mostram um aviso de "em breve". O login por e-mail funciona normalmente.
 
 1. Acesse https://www.linkedin.com/developers/apps e clique em **Create app**.
    - **App name:** VagaPronta. **LinkedIn Page:** escolha ou crie uma página simples. **Logo:** qualquer imagem quadrada.
@@ -245,7 +254,17 @@ Enquanto isso não for feito, o botão "Entrar com LinkedIn" e o "Conectar Linke
 
 **Testar localmente (opcional):** em `supabase/config.toml`, mude `[auth.external.linkedin_oidc] enabled = true` e crie `supabase/.env` com `SUPABASE_AUTH_EXTERNAL_LINKEDIN_OIDC_CLIENT_ID=...` e `SUPABASE_AUTH_EXTERNAL_LINKEDIN_OIDC_SECRET=...`. No LinkedIn, acrescente a redirect URL `http://127.0.0.1:54321/auth/v1/callback`.
 
-## 5. Banco de dados na nuvem (em construção)
+## 5. Banco de dados e funções na nuvem
+
+Com o projeto criado e a CLI autorizada (seção 2):
+
+```bash
+npx supabase link --project-ref <ref>     # liga esta pasta ao projeto
+npx supabase db push                      # cria as tabelas (migrations); NUNCA envia o seed
+npx supabase functions deploy             # publica as 11 Edge Functions
+```
+
+O `seed.sql` (dados de exemplo) é só local. Na nuvem, cada pessoa cria a própria conta.
 
 ## 6. Chaves do Gemini e fontes de vagas
 
@@ -270,7 +289,10 @@ Enquanto isso não for feito, o botão "Entrar com LinkedIn" e o "Conectar Linke
   GEMINI_API_KEY=sua-chave
   ```
   Depois rode `npx supabase stop` e `npx supabase start`.
-- **Nuvem:** (em construção, junto com o deploy das funções)
+- **Nuvem:** no painel do Supabase, **Edge Functions → Secrets → Add new secret**, nome `GEMINI_API_KEY` e o valor da chave. As configurações que não são segredo vão pela CLI:
+  ```bash
+  npx supabase secrets set AI_PROVIDER=gemini JOBS_MODE=real AI_DAILY_LIMIT=40     GEMINI_MODEL=gemini-flash-latest,gemini-3-flash-preview GEMINI_MODEL_LITE=gemini-3.5-flash-lite,gemini-flash-lite-latest
+  ```
 
 **Limites do nível gratuito:**
 
@@ -314,12 +336,33 @@ O app guarda cada consulta em cache (`source_cache`) e só consulta de novo depo
 
 A função `buscar-vagas` roda sozinha todos os dias às 7h (Brasília) e também pelo botão "Buscar agora" (até 5 vezes por dia por pessoa).
 
-1. Crie um segredo qualquer, longo (ex.: gerado por um gerenciador de senhas), e configure em **Edge Functions → Secrets** com o nome `CRON_SECRET`.
-2. Em **Database → Extensions**, confira que `pg_cron` e `pg_net` estão ativas (a migration já tenta ativar).
-3. Abra o **SQL Editor**, cole `supabase/cron/agendar-busca.sql`, troque o endereço do projeto e o segredo, e rode **uma vez**. Os dois valores ficam no Vault do Supabase, criptografados.
-4. Para conferir: `select * from cron.job_run_details order by start_time desc limit 5;`
+Não há segredo para copiar: a migration `20261124000100_agendamento_busca.sql` ativa `pg_cron` e `pg_net` e cria a função que gera um segredo aleatório **dentro do banco** (no Vault, criptografado). Para ligar, rode uma vez:
 
-## 8. Publicar no GitHub Pages (em construção)
+```bash
+npx supabase db query --linked "select public.agendar_busca_diaria('https://<ref>.supabase.co');"
+```
+
+- Conferir: `select * from cron.job;` e `select * from cron.job_run_details order by start_time desc limit 5;`
+- Desligar: `select cron.unschedule('vagapronta-busca-diaria');`
+- O secret `CRON_SECRET` das funções é opcional (vale como alternativa ao segredo do Vault).
+
+## 8. Publicar no GitHub Pages
+
+O workflow `.github/workflows/publicar.yml` roda a cada push na `main`: checagem de segredos, testes, build e publicação.
+
+1. No GitHub, crie o repositório **público** `vagapronta` (sem README, sem .gitignore).
+2. **Settings → Pages → Build and deployment → Source:** *GitHub Actions*.
+3. **Settings → Secrets and variables → Actions → aba Variables → New repository variable**, crie as duas (são públicas por natureza):
+   - `VITE_SUPABASE_URL` = `https://<ref>.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY` = a chave **anon/publishable** (nunca a service_role)
+4. Envie o código:
+   ```bash
+   git remote add origin https://github.com/nellschiavi/vagapronta.git
+   git push -u origin main
+   ```
+5. Acompanhe em **Actions**. Em 2 a 3 minutos o app fica em https://nellschiavi.github.io/vagapronta/.
+
+O build divide o app por tela (cada página é baixada só quando é aberta) e separa as bibliotecas em arquivos que ficam no cache do navegador entre versões.
 
 ---
 
@@ -340,6 +383,8 @@ Todas as tabelas têm `user_id`, `created_at`, `updated_at` e **RLS**: cada pess
 | `cover_letters` | cartas de apresentação |
 | `applications` | candidaturas do kanban |
 | `ai_usage` | quantas vezes cada pessoa usou a IA no dia (limite da cota gratuita) |
+
+Áreas de atuação por profissão (termos de busca por país, vagas fora da área): `supabase/functions/_shared/vagas/areas.ts`.
 
 PDFs ficam no bucket privado `curriculos`, numa pasta com o id de cada pessoa, e são acessados por URL assinada.
 

@@ -32,7 +32,7 @@ const INLINE = /\b(api[_-]?key|secret|token|password|senha)\w*["']?\s*[:=]\s*["'
 const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i
 
 /** valores que são claramente de exemplo */
-const PLACEHOLDER = /^(|false|true|mock|real|offline|null|none|0|\d{1,3}|x+|\.\.\.|<.*>|\$\{?\w+\}?|your[_-].*|seu[_-].*|cole[_-].*|COLE-AQUI.*|changeme|env\(.*\)|exemplo.*)$/i
+const PLACEHOLDER = /^(|false|true|mock|real|offline|null|none|0|\d{1,3}|x+|\.\.\.|<.*>|\$\{?\w+\}?|\$\{\{.*|your[_-].*|seu[_-].*|cole[_-].*|COLE-AQUI.*|changeme|env\(.*\)|exemplo.*)$/i
 
 const isEnvFile = (f) => /(^|\/)\.env(\..+)?$/.test(f)
 const isExample = (f) => /\.(example|sample|template)$|\.example\./.test(f)

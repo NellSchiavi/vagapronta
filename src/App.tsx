@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/query-client'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
@@ -6,21 +7,24 @@ import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/lib/auth'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { ThemeProvider } from '@/lib/theme'
-import { PublicOnly, RequireAuth, RequireOnboarded } from '@/routes/guards'
+import { FullPageLoader, PublicOnly, RequireAuth, RequireOnboarded } from '@/routes/guards'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { HomePage } from '@/pages/home/HomePage'
-import { AdaptPage } from '@/pages/adapt/AdaptPage'
-import { ApplicationsPage } from '@/pages/applications/ApplicationsPage'
-import { JobsPage } from '@/pages/jobs/JobsPage'
-import { LettersPage } from '@/pages/letters/LettersPage'
-import { ProfilePage } from '@/pages/profile/ProfilePage'
-import { InstallButtonPage } from '@/pages/InstallButtonPage'
-import { ResumePage } from '@/pages/resume/ResumePage'
-import { ResumeEditorPage } from '@/pages/resume/editor/ResumeEditorPage'
 import { LoginPage } from '@/pages/login/LoginPage'
-import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { SetupMissingPage } from '@/pages/SetupMissingPage'
-import { StyleGuidePage } from '@/pages/StyleGuidePage'
+import { lazyPage } from '@/routes/lazy-page'
+
+// cada tela é um arquivo separado no build: o celular baixa só o que abrir
+const HomePage = lazyPage(() => import('@/pages/home/HomePage'), 'HomePage')
+const AdaptPage = lazyPage(() => import('@/pages/adapt/AdaptPage'), 'AdaptPage')
+const ApplicationsPage = lazyPage(() => import('@/pages/applications/ApplicationsPage'), 'ApplicationsPage')
+const JobsPage = lazyPage(() => import('@/pages/jobs/JobsPage'), 'JobsPage')
+const LettersPage = lazyPage(() => import('@/pages/letters/LettersPage'), 'LettersPage')
+const ProfilePage = lazyPage(() => import('@/pages/profile/ProfilePage'), 'ProfilePage')
+const InstallButtonPage = lazyPage(() => import('@/pages/InstallButtonPage'), 'InstallButtonPage')
+const ResumePage = lazyPage(() => import('@/pages/resume/ResumePage'), 'ResumePage')
+const ResumeEditorPage = lazyPage(() => import('@/pages/resume/editor/ResumeEditorPage'), 'ResumeEditorPage')
+const OnboardingPage = lazyPage(() => import('@/pages/onboarding/OnboardingPage'), 'OnboardingPage')
+const StyleGuidePage = lazyPage(() => import('@/pages/StyleGuidePage'), 'StyleGuidePage')
 
 
 export function App() {
@@ -30,6 +34,7 @@ export function App() {
         <TooltipProvider>
           {/* HashRouter: as rotas funcionam no GitHub Pages sem configuração extra */}
           <HashRouter>
+            <Suspense fallback={<FullPageLoader />}>
             {isSupabaseConfigured ? (
               <AuthProvider>
                 <Routes>
@@ -62,6 +67,7 @@ export function App() {
                 <Route path="*" element={<SetupMissingPage />} />
               </Routes>
             )}
+            </Suspense>
           </HashRouter>
           <Toaster />
         </TooltipProvider>

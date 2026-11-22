@@ -1,4 +1,6 @@
+import { Suspense } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { LoadingCards } from '@/components/ui/skeleton'
 import { motion } from 'framer-motion'
 import { AiTasksIndicator } from '@/components/ai/ai-tasks-indicator'
 import { Footer } from '@/components/brand/footer'
@@ -37,7 +39,10 @@ export function AppLayout() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
-            <Outlet />
+            {/* a barra e o menu ficam na tela enquanto a página abre */}
+            <Suspense fallback={<LoadingCards count={2} />}>
+              <Outlet />
+            </Suspense>
           </motion.div>
         </main>
         <Footer />
