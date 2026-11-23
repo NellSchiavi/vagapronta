@@ -12,6 +12,7 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "checar-segredos": "node scripts/checar-segredos.mjs --tudo",
+    "checar-termos": "node scripts/checar-termos.mjs --tudo",
     "hooks:instalar": "node scripts/instalar-hooks.mjs",
     "db:types":"supabase gen types typescript --local --schema public > src/lib/database.types.ts"
   },

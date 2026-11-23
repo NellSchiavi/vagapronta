@@ -43,6 +43,7 @@ Comandos úteis:
 - `npm run db:types`: atualiza os tipos TypeScript depois de mudar o banco.
 - `npm run hooks:instalar`: instala a **checagem de segredos** (rode uma vez depois de clonar). Todo commit passa a ser bloqueado se algum arquivo tiver algo parecido com chave de API, principalmente os `.example`, que vão para o GitHub.
 - `npm run checar-segredos`: confere todos os arquivos do repositório.
+- `npm run checar-termos`: confere arquivos, mensagens de commit e autores contra a lista de termos não permitidos (o mesmo hook bloqueia commits e o GitHub Actions bloqueia a publicação).
 
 O login com LinkedIn só funciona depois de configurado (seção 4). Até lá, use "Entrar com e-mail".
 
