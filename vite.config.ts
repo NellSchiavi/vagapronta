@@ -3,8 +3,9 @@ import react from '@vitejs/plugin-react'
 import path from 'node:path'
 
 // O app é publicado em https://nellschiavi.github.io/vagapronta/
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/vagapronta/' : '/',
+// (o "vite preview" usa o mesmo caminho, para testar o build como ele fica publicado)
+export default defineConfig(({ command, isPreview }) => ({
+  base: command === 'build' || isPreview ? '/vagapronta/' : '/',
   plugins: [react()],
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
