@@ -39,8 +39,9 @@ export function EmailSentCard({ email, onChangeEmail }: { email: string; onChang
   async function verifyCode(e: React.FormEvent) {
     e.preventDefault()
     const token = code.replace(/\D/g, '')
-    if (token.length !== 6) {
-      setCodeError('O código tem 6 números. Confira no e-mail e digite de novo.')
+    // o tamanho do código depende da configuração do projeto (6 a 10 números)
+    if (token.length < 6 || token.length > 10) {
+      setCodeError('Digite todos os números do código que veio no e-mail.')
       return
     }
     setCodeError(undefined)
@@ -81,14 +82,14 @@ export function EmailSentCard({ email, onChangeEmail }: { email: string; onChang
         <Field
           label="Abriu o e-mail em outro aparelho? Digite o código"
           htmlFor="login-code"
-          hint="São 6 números, logo abaixo do botão no e-mail."
+          hint="São os números logo abaixo do botão no e-mail."
           error={codeError}
         >
           <Input
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={7}
-            placeholder="000000"
+            maxLength={14}
+            placeholder="código"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             className="min-h-[48px] font-serif text-xl tracking-[0.4em]"

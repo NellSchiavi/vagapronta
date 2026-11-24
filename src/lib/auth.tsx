@@ -35,7 +35,7 @@ function bootFromUrl(): Promise<string | null> {
     if (code) {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (error) {
-        return 'Esse link de acesso não funcionou neste navegador. Se você abriu o e-mail em outro aparelho, peça um novo link e digite o código de 6 dígitos que vem no e-mail.'
+        return 'Esse link de acesso não funcionou neste navegador. Se você abriu o e-mail em outro aparelho, peça um novo link e digite o código numérico que vem no e-mail.'
       }
     }
     return null

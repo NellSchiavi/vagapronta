@@ -141,7 +141,7 @@ Em computador da empresa, o firewall pode ser controlado pela TI. Nesse caso, a 
 
 1. No celular, abra o endereço "📱 Abra no celular".
 2. Toque em **Entrar com e-mail**, digite o e-mail e toque em **Enviar link de acesso**.
-3. No **computador**, abra o endereço "✉️ Códigos de acesso", clique no e-mail mais recente e veja o **código de 6 dígitos**.
+3. No **computador**, abra o endereço "✉️ Códigos de acesso", clique no e-mail mais recente e veja o **código numérico**.
 4. Digite o código no celular, no campo **"Abriu o e-mail em outro aparelho?"**.
 
 O **link** do e-mail não funciona no celular nesse modo de teste (ele aponta para o computador). Use sempre o código.
@@ -226,7 +226,7 @@ Depois de configurar o SMTP, confira em **Authentication → Rate Limits** se "R
 
 ### 3.3 Textos dos e-mails (link e código)
 
-O app aceita tanto o **link** quanto o **código de 6 dígitos** do e-mail, que é útil quando a pessoa pede o acesso no computador e abre o e-mail no celular. Os modelos padrão do Supabase estão em inglês e não trazem o código. Para trocá-los:
+O app aceita tanto o **link** quanto o **código numérico** do e-mail, que é útil quando a pessoa pede o acesso no computador e abre o e-mail no celular. Os modelos padrão do Supabase estão em inglês e não trazem o código. Para trocá-los:
 
 1. No painel: **Authentication → Emails → Templates**.
 2. **Magic Link:**
