@@ -94,7 +94,7 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
   // só o que diz o que a pessoa sabe fazer: habilidades, cursos e experiências (sem contato)
   const s = content.sections
   const resumeText = s
-    ? [...s.habilidades, ...s.cursos, ...s.experiencias.map((e) => `${e.cargo} ${e.descricao ?? ''}`)].join('\n')
+    ? [...(s.habilidades ?? []), ...(s.cursos ?? []), ...(s.experiencias ?? []).map((e) => `${e.cargo ?? ''} ${e.descricao ?? ''}`)].join('\n')
     : (content.raw_text ?? '')
   // áreas (areas.ts): termos de busca por país, peso da área preferida e vagas fora da área no fim
   const chosenAreas: string[] = prefs?.areas ?? []
