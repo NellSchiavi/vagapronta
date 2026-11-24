@@ -155,7 +155,8 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
       })
       // para o Brasil, vaga remota que não aceita quem mora aqui não serve
       .filter((x) => !(dest === 'BR' && x.remote === false))
-      .filter((x) => x.m.score >= MIN_SCORE)
+      // nota final (com o peso da área): vaga da área com título diferente do cargo também entra
+      .filter((x) => x.score >= MIN_SCORE)
       // fora da área (ex.: engenharia biomédica para biomédica) vai para o fim
       .sort((a, b) => Number(a.adj.offTopic) - Number(b.adj.offTopic) || b.score - a.score)
       .slice(0, count)
