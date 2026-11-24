@@ -9,7 +9,7 @@ import { invokeAi } from '@/lib/ai'
 import { useAuth } from '@/lib/auth'
 import { friendlyDataError } from '@/lib/errors'
 import { useAvatarUrl, useUpdateProfile, type Profile } from '@/lib/profile'
-import { appUrl, fetchAuthSettings, supabase } from '@/lib/supabase'
+import { appUrl, supabase } from '@/lib/supabase'
 import { AvatarCropper } from './AvatarCropper'
 
 const MAX_INPUT = 10 * 1024 * 1024
@@ -71,12 +71,6 @@ export function PhotoBlock({ profile }: { profile: Profile }) {
 
   async function connectLinkedIn() {
     setBusy('connect')
-    const { linkedin } = await fetchAuthSettings()
-    if (!linkedin) {
-      setBusy(null)
-      toast.info('O login com LinkedIn ainda não foi configurado.', { description: 'Em breve você poderá conectar sua conta do LinkedIn aqui.' })
-      return
-    }
     const { error } = await supabase.auth.linkIdentity({ provider: 'linkedin_oidc', options: { redirectTo: `${appUrl()}#/perfil` } })
     if (error) {
       setBusy(null)

@@ -63,15 +63,3 @@ export const supabase = createClient<Database>(url || 'http://127.0.0.1:54321', 
 export function appUrl() {
   return `${window.location.origin}${import.meta.env.BASE_URL}`
 }
-
-/** Descobre quais provedores de login estão ligados no Supabase (ex.: LinkedIn) */
-export async function fetchAuthSettings(): Promise<{ linkedin: boolean }> {
-  try {
-    const res = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: anonKey } })
-    if (!res.ok) return { linkedin: false }
-    const json = (await res.json()) as { external?: Record<string, boolean> }
-    return { linkedin: Boolean(json.external?.linkedin_oidc) }
-  } catch {
-    return { linkedin: false }
-  }
-}

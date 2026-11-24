@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle, Mail, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -9,7 +9,7 @@ import { LinkedInIcon } from '@/components/brand/linkedin-icon'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth'
 import { friendlyAuthError } from '@/lib/errors'
-import { appUrl, fetchAuthSettings, supabase } from '@/lib/supabase'
+import { appUrl, supabase } from '@/lib/supabase'
 import { EmailLoginForm } from './EmailLoginForm'
 import { EmailSentCard } from './EmailSentCard'
 import { LoginShowcase } from './LoginShowcase'
@@ -28,19 +28,8 @@ export function LoginPage() {
   const [mode, setMode] = useState<Mode>('choose')
   const [email, setEmail] = useState('')
   const [linkedinLoading, setLinkedinLoading] = useState(false)
-  const [linkedinEnabled, setLinkedinEnabled] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    fetchAuthSettings().then((s) => setLinkedinEnabled(s.linkedin))
-  }, [])
 
   async function signInWithLinkedIn() {
-    if (linkedinEnabled === false) {
-      toast.info('O login com LinkedIn ainda não foi configurado.', {
-        description: 'Por enquanto, use o botão "Entrar com e-mail".',
-      })
-      return
-    }
     setLinkedinLoading(true)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',

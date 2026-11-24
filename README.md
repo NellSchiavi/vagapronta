@@ -239,9 +239,9 @@ O app aceita tanto o **link** quanto o **código numérico** do e-mail, que é �
 
 Os dois modelos usam `{{ .ConfirmationURL }}` (o link) e `{{ .Token }}` (o código). No ambiente local, eles já são aplicados automaticamente pelo `supabase/config.toml`.
 
-## 4. Login com LinkedIn (desligado por enquanto)
+## 4. Login com LinkedIn
 
-O login com LinkedIn está **desligado** na versão publicada. Enquanto ele não for configurado, o botão "Entrar com LinkedIn" e o "Conectar LinkedIn" (em Meu perfil) mostram um aviso de "em breve". O login por e-mail funciona normalmente.
+O login com LinkedIn está **ligado** na versão publicada: "Entrar com LinkedIn" na tela de login e "Conectar LinkedIn" em Meu perfil (para quem entrou por e-mail). Passos usados para configurar (refaça só se trocar de projeto):
 
 1. Acesse https://www.linkedin.com/developers/apps e clique em **Create app**.
    - **App name:** VagaPronta. **LinkedIn Page:** escolha ou crie uma página simples. **Logo:** qualquer imagem quadrada.

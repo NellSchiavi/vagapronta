@@ -1,6 +1,6 @@
 import * as React from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { friendlyAuthError } from '@/lib/errors'
 
@@ -47,7 +47,7 @@ function bootFromUrl(): Promise<string | null> {
  * Quem entra com LinkedIn tem a foto atualizada a cada login (uma vez por sessão),
  * a não ser que tenha escolhido outra foto ou removido a foto (a função respeita isso).
  */
-function syncLinkedInPhoto(s: Session) {
+function syncLinkedInPhoto(s: Session, queryClient: QueryClient) {
   const linked = (s.user.identities ?? []).some((i) => i.provider === 'linkedin_oidc')
   if (!linked) return
   const flag = `vp-foto-linkedin-${s.user.id}`
@@ -57,9 +57,15 @@ function syncLinkedInPhoto(s: Session) {
   } catch {
     /* sem armazenamento: tenta mesmo assim */
   }
-  supabase.functions.invoke('foto-linkedin', { body: {} }).catch(() => {
-    /* sem foto ou LinkedIn fora do ar: segue com a foto atual */
-  })
+  supabase.functions
+    .invoke('foto-linkedin', { body: {} })
+    .then(({ data }) => {
+      // foto copiada para o Storage: a tela passa a usar a cópia (o link do LinkedIn expira)
+      if (data?.avatar_path) queryClient.invalidateQueries({ queryKey: ['profile', s.user.id] })
+    })
+    .catch(() => {
+      /* sem foto ou LinkedIn fora do ar: segue com a foto atual */
+    })
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -79,13 +85,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       if (active) setSession(s)
-      if (s) syncLinkedInPhoto(s)
+      if (s) syncLinkedInPhoto(s, queryClient)
     })
     return () => {
       active = false
       sub.subscription.unsubscribe()
     }
-  }, [])
+  }, [queryClient])
 
   const signOut = React.useCallback(async () => {
     await supabase.auth.signOut()

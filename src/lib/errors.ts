@@ -11,7 +11,7 @@ export function friendlyAuthError(error: unknown): string {
   if (msg.includes('signups not allowed') || code === 'signup_disabled')
     return 'Novos cadastros estão desligados no momento. Fale com o Nelson.'
   if (msg.includes('provider is not enabled') || msg.includes('unsupported provider'))
-    return 'O login com LinkedIn ainda não foi configurado. Use o e-mail por enquanto.'
+    return 'O login com LinkedIn está indisponível agora. Use o e-mail e tente o LinkedIn mais tarde.'
   if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('load failed'))
     return 'Sem conexão com o servidor. Confira sua internet e tente de novo.'
   if (msg.includes('access_denied') || msg.includes('user cancelled') || msg.includes('canceled'))
