@@ -17,6 +17,7 @@ import { distributeSearch } from '../_shared/destinos.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import type { ResumeContent } from '../_shared/resume.ts'
 import { exampleJobs } from '../_shared/vagas/exemplo.ts'
+import { basicRequirements, buildAdherence, hasRequirementsSection, resumePieces } from '../_shared/aderencia.ts'
 import { areaAdjustment, detectProfessions, knownAreas, searchTerms } from '../_shared/vagas/areas.ts'
 import { keySourcesMissing, queriesFor, type SourceQuery } from '../_shared/vagas/fontes.ts'
 import { englishQuery, estimateMatch, isExcluded, normalize, remoteFromBrazil, requiredLanguage, visaSponsorship, type FoundJob } from '../_shared/vagas/regras.ts'
@@ -101,6 +102,8 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
   const preferred: string | null = prefs?.preferred_area ?? null
   const professions = detectProfessions([...roles, ...chosenAreas, profile?.registry_council])
   const areas = knownAreas(chosenAreas)
+  // aderência aos requisitos (sem IA): cada vaga é comparada com o currículo ORIGINAL
+  const pieces = resumePieces(s, content.raw_text ?? '').join('\n')
   const match = { roles, resumeText, include: prefs?.keywords_include ?? [], workModes: prefs?.work_modes ?? [], seniority: prefs?.seniority ?? [] }
 
   // o que a pessoa já tem (inclusive descartadas) não volta
@@ -163,6 +166,10 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
 
     for (const { j, remote, lang, visa, m, adj, score } of ranked) {
       known.add(`${j.source}:${j.external_id}`)
+      // nota principal = aderência (quando o anúncio traz requisitos); senão, só a de palavras-chave
+      // só quando o anúncio tem seção de requisitos (anúncio resumido pela fonte fica com palavras-chave)
+      const ad = hasRequirementsSection(j.description) ? buildAdherence(basicRequirements(j.description, s, content.raw_text ?? ''), pieces, true) : null
+      const aderencia = ad && ad.requisitos.length >= 2 ? ad : null
       sources[j.source] = (sources[j.source] ?? 0) + 1
       rows.push({
         user_id: userId,
@@ -176,10 +183,21 @@ async function searchForUser(admin: SupabaseClient, userId: string, trigger: 'ag
         source_url: j.source_url || null,
         description: j.description,
         salary: j.salary,
-        compatibility: score,
+        compatibility: aderencia ? aderencia.nota : score,
         match_notes: {
           estimada: true,
           termos: m.terms,
+          palavras: score,
+          ...(aderencia
+            ? {
+                aderencia: {
+                  nota: aderencia.nota,
+                  teto: aderencia.teto,
+                  basica: true,
+                  requisitos: aderencia.requisitos.slice(0, 8).map((r) => ({ ...r, evidencia: r.evidencia.slice(0, 140), dica: r.dica.slice(0, 220) })),
+                },
+              }
+            : {}),
           ...(adj.area ? { area: adj.area } : {}),
           ...(adj.offTopic ? { fora_da_area: true } : {}),
           ...(j.example ? { exemplo: true } : {}),

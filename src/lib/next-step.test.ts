@@ -84,7 +84,7 @@ describe('computeNextStep', () => {
     })
     expect(s.kind).toBe('adapt')
     expect(s.title).toBe('Adapte seu currículo para Assistente de DP')
-    expect(s.meta).toBe('Natura · 91% compatível')
+    expect(s.meta).toBe('Natura · 91% palavras-chave')
     expect(s.action.to).toBe('/adaptar?vaga=2')
   })
 

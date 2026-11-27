@@ -25,14 +25,20 @@ export function StatusPill({ status, className }: { status: ApplicationStatus; c
 }
 
 /** Compatibilidade da vaga: verde acima de 85%, terracota abaixo */
-export function MatchPill({ value, className }: { value: number; className?: string }) {
+/**
+ * Nota da vaga com o nome certo: "aderência" (quanto a pessoa realmente atende aos requisitos)
+ * ou "palavras-chave" (quanto o currículo usa os termos do anúncio). Ver lib/job-score.ts.
+ */
+export function MatchPill({ value, kind = 'palavras', className }: { value: number; kind?: 'aderencia' | 'palavras'; className?: string }) {
   const high = value > 85
+  const label = kind === 'aderencia' ? 'aderência' : 'palavras-chave'
   return (
     <span
       className={cn(pillBase, high ? 'bg-success-soft text-success' : 'bg-terra-soft text-terra-strong', className)}
-      aria-label={`Compatibilidade de ${value}%`}
+      aria-label={`${kind === 'aderencia' ? 'Aderência aos requisitos' : 'Palavras-chave da vaga'}: ${value}%`}
+      title="Esta nota é uma estimativa do app. Cada empresa e cada sistema de seleção avalia de um jeito."
     >
-      {value}% compatível
+      {value}% {label}
     </span>
   )
 }

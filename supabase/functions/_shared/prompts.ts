@@ -122,15 +122,13 @@ Responda SOMENTE com um JSON neste formato:
   "vaga": { "titulo": "cargo da vaga", "empresa": "nome ou null", "local": "cidade/UF ou null",
             "modalidade": "presencial" | "hibrido" | "remoto" | null,
             "resumo": "o que a vaga pede, em 1 ou 2 frases" },
-  "compat_antes": 0-100,
-  "palavras_chave": ["termos importantes da vaga"],
+  "palavras_chave": ["de 6 a 15 termos importantes da vaga, como aparecem no anúncio"],
   "mudancas": [
     { "secao": "resumo" | "experiencia" | "formacao" | "habilidades",
       "titulo": "ação curta, ex.: Use o nome do cargo da vaga no resumo",
       "motivo": "por que ajuda nesta vaga, em 1 frase",
       "antes": "trecho EXATO copiado do currículo, ou \\"\\" quando for algo novo",
-      "depois": "o texto novo, pronto para usar",
-      "impacto": pontos percentuais que esta mudança acrescenta à compatibilidade (0-30) }
+      "depois": "o texto novo, pronto para usar" }
   ]
 }
 
@@ -143,13 +141,50 @@ Regras das mudanças (de 3 a 6, as de maior impacto primeiro):
 - "habilidades": "antes" é ""; "depois" lista, separada por vírgulas, SÓ habilidades novas que a experiência descrita comprova.
 - "formacao": só se fizer sentido sugerir um curso curto que a vaga valoriza; "antes" é "".
 - Ajuste o TOM ao da vaga (mais formal para hospitais, bancos e indústria; mais leve para startups e varejo).
-- Seja honesta em "compat_antes"; a soma dos "impacto" deve ser realista (o total depois não passa de 95).
+- Não dê notas nem porcentagens: o app calcula a compatibilidade sozinho.
 - Se houver "MOMENTO PROFISSIONAL" no pedido, siga essa orientação.
 - Escreva no idioma do currículo.
 - ${PRIVACY_NOTE}`
 
 // ---------------------------------------------------------------------------
-export const LETTER_SYSTEM = `Você escreve cartas de apresentação para candidaturas a emprego no Brasil e no exterior.
+/**
+ * Avaliação INDEPENDENTE da aderência aos requisitos. Chamada separada da adaptação,
+ * sempre com o currículo ORIGINAL. A nota é calculada no código (aderencia.ts), não aqui.
+ */
+export const REQUIREMENTS_SYSTEM = `Você é uma recrutadora brasileira rigorosa fazendo a triagem de um currículo para UMA vaga.
+Sua tarefa: listar os requisitos da vaga e dizer, com honestidade, se o currículo comprova cada um. ${AUDIENCE}
+
+Responda SOMENTE com um JSON neste formato:
+{
+  "requisitos": [
+    { "requisito": "o que a vaga pede, curto (ex.: 3 anos de experiência em pesquisa clínica)",
+      "tipo": "obrigatorio" | "desejavel",
+      "categoria": "experiencia" | "formacao" | "registro" | "ferramenta" | "idioma" | "outro",
+      "status": "atende" | "parcial" | "nao_atende",
+      "evidencia": "trecho COPIADO EXATAMENTE do currículo que comprova, ou \\"\\"",
+      "dica": "para parcial ou nao_atende: uma frase honesta; para atende: \\"\\"" }
+  ]
+}
+
+Regras:
+- SOMENTE requisitos escritos no anúncio. Não acrescente exigências que o anúncio não faz (ex.: registro em conselho
+  que a vaga não pede).
+- De 4 a 12 requisitos: anos de experiência, tipo de experiência, formação, registro em conselho e certificações,
+  ferramentas e sistemas, idiomas. Ignore benefícios, salário e tarefas do dia a dia que não são exigência.
+- "desejavel" só quando o anúncio diz desejável, diferencial, plus ou equivalente. O resto é "obrigatorio".
+- Seja rigorosa como uma recrutadora: "atende" só quando o currículo MOSTRA claramente. Palavra solta na lista de
+  habilidades, sem experiência que a sustente, é no máximo "parcial". Não presuma nada que não está escrito.
+- Anos de experiência: conte pelas datas das experiências, até a data de hoje informada no pedido, e só nas experiências
+  da área pedida. Estágio conta pela metade. Se faltar tempo, é "parcial" (mais da metade) ou "nao_atende".
+- Idioma em nível abaixo do pedido é "parcial". Formação ou registro diferente do pedido é "nao_atende".
+- "evidencia" precisa ser um trecho literal do currículo. Se não houver, use "" (e então não pode ser "atende").
+- "dica" compara o que a vaga pede com o que o currículo mostra e sugere o que fazer SEM inventar nada. Exemplo:
+  "Esta vaga pede 3 anos em pesquisa clínica; seu currículo mostra 1 ano. Vale destacar na carta o que você tem de próximo."
+- Escreva em português do Brasil.
+- ${PRIVACY_NOTE}`
+
+// ---------------------------------------------------------------------------
+export const LETTER_SYSTEM =`Você escreve cartas de apresentação para candidaturas a emprego no Brasil e no exterior.
 A carta deve soar humana, específica para a vaga e verdadeira. ${AUDIENCE}
 
 Responda SOMENTE com um JSON neste formato:

@@ -13,6 +13,7 @@ import { firstName, useProfile } from '@/lib/profile'
 import { useHomeData, type HomeData } from '@/lib/queries/home'
 import { WORK_MODE_LABEL } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { jobScore, SCORE_DISCLAIMER, SCORE_LABEL } from '@/lib/job-score'
 
 export function HomePage() {
   const { data: profile } = useProfile()
@@ -209,7 +210,9 @@ function TopJobs({ data }: { data: HomeData }) {
   return (
     <SectionCard title="Vagas para você" link={{ to: '/vagas', label: 'Ver todas' }}>
       <ul className="divide-y divide-line px-2 pb-2">
-        {data.topJobs.map((j) => (
+        {data.topJobs.map((j) => {
+          const score = jobScore(j)
+          return (
           <li key={j.id}>
             <Link to={`/vagas?id=${j.id}`} className="flex items-center gap-3 rounded-field px-3 py-3 hover:bg-bg">
               <CompanyInitial name={j.company ?? j.title} />
@@ -220,21 +223,24 @@ function TopJobs({ data }: { data: HomeData }) {
                   {j.work_mode && j.work_mode !== 'remoto' ? ` · ${WORK_MODE_LABEL[j.work_mode]}` : ''}
                 </p>
               </div>
-              {j.compatibility !== null && <MatchPill value={j.compatibility} className="hidden sm:inline-flex" />}
-              {j.compatibility !== null && (
+              {score && <MatchPill value={score.value} kind={score.kind} className="hidden sm:inline-flex" />}
+              {score && (
                 <span
                   className={cn(
                     'rounded-full px-2 py-0.5 text-xs font-medium sm:hidden',
-                    j.compatibility > 85 ? 'bg-success-soft text-success' : 'bg-terra-soft text-terra-strong',
+                    score.value > 85 ? 'bg-success-soft text-success' : 'bg-terra-soft text-terra-strong',
                   )}
+                  aria-label={`${SCORE_LABEL[score.kind]}: ${score.value}%`}
                 >
-                  {j.compatibility}%
+                  {score.value}%{score.kind === 'aderencia' ? ' aderência' : ''}
                 </span>
               )}
             </Link>
           </li>
-        ))}
+          )
+        })}
       </ul>
+      <p className="px-5 pb-4 text-xs text-muted">{SCORE_DISCLAIMER}</p>
     </SectionCard>
   )
 }

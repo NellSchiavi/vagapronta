@@ -1,23 +1,26 @@
 /**
  * POST /adaptar-vaga  { resume_id, job_text?, job_url?, job_id? }
  * Compara o currículo com uma vaga e propõe mudanças (palavras-chave,
- * habilidades e tom), com a compatibilidade antes e a estimativa depois.
+ * habilidades e tom). Devolve duas notas:
+ *  - palavras-chave da vaga (antes e com as mudanças), calculada aqui;
+ *  - aderência aos requisitos (nota principal), avaliada numa chamada SEPARADA
+ *    sobre o currículo ORIGINAL: a adaptação não consegue aumentá-la.
  * NÃO grava nada: a pessoa marca o que aceita e salva uma nova versão na tela.
  */
 import { z } from 'npm:zod@3.24.1'
 import { generateJson, isAiFailure } from '../_shared/ai.ts'
-import { basicAdaptation } from '../_shared/basico.ts'
+import { basicRequirements, buildAdherence, resumePieces, type Requirement } from '../_shared/aderencia.ts'
+import { basicAdaptation, containsTerm, jobKeywords, normalize, resumeComparableText } from '../_shared/basico.ts'
 import { requireUser } from '../_shared/auth.ts'
 import { fetchJobFromUrl } from '../_shared/fetch-job.ts'
 import { cleanJobUrl } from '../_shared/links.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import { promptRules } from '../_shared/paises.ts'
 import { redactPersonalData } from '../_shared/privacy.ts'
-import { ADAPT_SYSTEM, careerStageGuidance, guardInventedNumbers } from '../_shared/prompts.ts'
+import { ADAPT_SYSTEM, careerStageGuidance, guardInventedNumbers, REQUIREMENTS_SYSTEM } from '../_shared/prompts.ts'
 import { consumeQuota } from '../_shared/quota.ts'
 import { clip, resumeToText, type ResumeContent } from '../_shared/resume.ts'
 
-const pct = z.coerce.number().transform((n) => Math.max(0, Math.min(100, Math.round(n))))
 const optStr = z.union([z.string().trim(), z.null()]).optional().transform((v) => (v ? v : undefined))
 
 const adaptSchema = z.object({
@@ -31,7 +34,6 @@ const adaptSchema = z.object({
       .catch(undefined),
     resumo: z.string().trim().max(600).default(''),
   }),
-  compat_antes: pct,
   palavras_chave: z.array(z.string().trim().min(1)).max(15).default([]),
   mudancas: z
     .array(
@@ -41,13 +43,34 @@ const adaptSchema = z.object({
         motivo: z.string().trim().min(1).max(400),
         antes: z.string().trim().default(''),
         depois: z.string().trim().min(1),
-        impacto: z.coerce.number().transform((n) => Math.max(0, Math.min(30, Math.round(n)))),
       }),
     )
     .min(1)
     .max(8),
 })
 type Adaptation = z.infer<typeof adaptSchema>
+
+const requirementsSchema = z.object({
+  requisitos: z
+    .array(
+      z.object({
+        requisito: z.string().trim().min(1).max(200),
+        tipo: z.enum(['obrigatorio', 'desejavel']).catch('obrigatorio'),
+        categoria: z.enum(['experiencia', 'formacao', 'registro', 'ferramenta', 'idioma', 'outro']).catch('outro'),
+        status: z.enum(['atende', 'parcial', 'nao_atende']),
+        evidencia: z.union([z.string(), z.null()]).optional().transform((v) => (v ?? '').trim().slice(0, 300)),
+        dica: z.union([z.string(), z.null()]).optional().transform((v) => (v ?? '').trim().slice(0, 400)),
+      }),
+    )
+    .max(14),
+})
+
+/** % das palavras-chave da vaga que aparecem no texto, e quais aparecem */
+function keywordScore(keywords: string[], textNorm: string) {
+  const presentes = keywords.filter((k) => containsTerm(textNorm, k))
+  return { presentes, nota: keywords.length ? Math.round((100 * presentes.length) / keywords.length) : 0 }
+}
+
 
 
 function mockAdaptation(resumeText: string, jobText: string, firstDescription?: string): Adaptation {
@@ -60,7 +83,6 @@ function mockAdaptation(resumeText: string, jobText: string, firstDescription?: 
       motivo: 'Os sistemas das empresas comparam o título do currículo com o da vaga.',
       antes: '',
       depois: `Profissional com experiência em ${title.toLowerCase()}, organizada e comunicativa, com foco em resultados e em uma boa experiência para as pessoas.`,
-      impacto: 10,
     },
     {
       secao: 'habilidades',
@@ -68,7 +90,6 @@ function mockAdaptation(resumeText: string, jobText: string, firstDescription?: 
       motivo: 'A vaga cita essas palavras; inclua só as que você realmente domina.',
       antes: '',
       depois: 'Indicadores de desempenho, Comunicação com gestores, Organização de processos',
-      impacto: 9,
     },
   ]
   if (snippet) {
@@ -78,12 +99,10 @@ function mockAdaptation(resumeText: string, jobText: string, firstDescription?: 
       motivo: 'Mostrar o mesmo tipo de tarefa da vaga aumenta a compatibilidade.',
       antes: snippet,
       depois: `${snippet.replace(/\.$/, '')}, com foco nas rotinas citadas na vaga.`,
-      impacto: 6,
     })
   }
   return {
     vaga: { titulo: title, empresa: 'Empresa da vaga', local: undefined, modalidade: undefined, resumo: 'Vaga de exemplo (modo de desenvolvimento).' },
-    compat_antes: Math.min(70, 45 + Math.round(resumeText.length / 200)),
     palavras_chave: ['Comunicação', 'Organização', 'Indicadores'],
     mudancas,
   }
@@ -139,6 +158,7 @@ Deno.serve(
     const resumeText = resumeToText(content)
     const redacted = redactPersonalData(clip(resumeText, 12000))
     step('dados pessoais protegidos')
+    const jobBlock = ['ANÚNCIO DA VAGA:', '"""', clip(jobText, 10000), '"""'].join('\n')
     const prompt = [
       `Cargo que a pessoa procura: ${profile?.desired_role || 'não informado'}`,
       `País do currículo — ${promptRules(resume.country)}`,
@@ -150,10 +170,7 @@ Deno.serve(
         conclusao: profile?.study_expected_end,
       }),
       '',
-      'ANÚNCIO DA VAGA:',
-      '"""',
-      clip(jobText, 10000),
-      '"""',
+      jobBlock,
       '',
       'CURRÍCULO ATUAL:',
       '"""',
@@ -161,22 +178,67 @@ Deno.serve(
       '"""',
     ].join('\n')
 
-    let raw: Adaptation
+    // a aderência é avaliada à parte, sempre com o currículo ORIGINAL (sem as mudanças sugeridas)
+    const today = new Date().toISOString().slice(0, 10)
+    const reqPrompt = [`Data de hoje: ${today}`, '', jobBlock, '', 'CURRÍCULO (original):', '"""', redacted.text, '"""'].join('\n')
+
+    const isOk = <T>(r: PromiseSettledResult<T>): r is PromiseFulfilledResult<T> => r.status === 'fulfilled'
+    let aiAdapt: Adaptation | null = null
+    let aiReqs: Requirement[] | null = null
     try {
-      raw = await quota.guard(() => generateJson({
-        task: 'adaptar-vaga',
-        system: ADAPT_SYSTEM,
-        prompt,
-        schema: adaptSchema,
-        temperature: 0.35,
-        tier: 'standard',
-        userEmail: user.email,
-        mock: () => mockAdaptation(resumeText, jobText, content.sections?.experiencias?.[0]?.descricao),
-      }))
+      const [a, r] = await quota.guard(async () => {
+        const results = await Promise.allSettled([
+          generateJson({
+            task: 'adaptar-vaga',
+            system: ADAPT_SYSTEM,
+            prompt,
+            schema: adaptSchema,
+            temperature: 0.35,
+            tier: 'standard',
+            userEmail: user.email,
+            mock: () => mockAdaptation(resumeText, jobText, content.sections?.experiencias?.[0]?.descricao),
+          }),
+          generateJson({
+            task: 'aderencia',
+            system: REQUIREMENTS_SYSTEM,
+            prompt: reqPrompt,
+            schema: requirementsSchema,
+            temperature: 0.1,
+            tier: 'standard',
+            userEmail: user.email,
+            mock: () => ({ requisitos: basicRequirements(jobText, content.sections) }),
+          }),
+        ] as const)
+        for (const x of results) if (x.status === 'rejected' && !isAiFailure(x.reason)) throw x.reason
+        // as duas falharam: devolve a cota (quota.guard) e usa o modo básico
+        if (results[0].status === 'rejected' && results[1].status === 'rejected') throw results[0].reason
+        return results
+      })
+      if (isOk(a)) aiAdapt = a.value as Adaptation
+      if (isOk(r)) aiReqs = redacted.restore(r.value).requisitos as Requirement[]
     } catch (err) {
       if (!isAiFailure(err)) throw err
-      // modo reserva sem IA: a cota já foi devolvida (quota.guard) e a pessoa consegue adaptar mesmo assim
-      step(`IA indisponível (${err.code}): análise básica por palavras-chave`)
+    }
+    step(`IA: adaptação ${aiAdapt ? 'ok' : 'básica'}, aderência ${aiReqs ? 'ok' : 'básica'}`)
+
+    // ---- aderência aos requisitos (nota principal), sempre sobre o currículo ORIGINAL
+    const pieces = resumePieces(content.sections).join('\n')
+    const aderencia =
+      (aiReqs && buildAdherence(aiReqs, pieces, false, jobText)) ?? buildAdherence(basicRequirements(jobText, content.sections), pieces, true)
+
+    // ---- adaptação (palavras-chave e mudanças)
+    type Change = Adaptation['mudancas'][number] & { impacto?: number }
+    let result: Omit<Adaptation, 'mudancas'> & { mudancas: Change[]; basica?: true; aviso?: string }
+    if (aiAdapt) {
+      // nenhum número inventado chega à tela: o que não está no currículo nem no anúncio vira [X]
+      aiAdapt.mudancas = aiAdapt.mudancas.map((m) => ({ ...m, depois: guardInventedNumbers(m.depois, [prompt]) }))
+      result = redacted.restore(aiAdapt) as typeof result
+      // dados lidos do próprio site têm preferência sobre o que a IA extraiu
+      result.vaga.titulo = fetched.title || result.vaga.titulo
+      result.vaga.empresa = fetched.company || result.vaga.empresa
+      result.vaga.local = fetched.location || result.vaga.local
+      if (!result.palavras_chave.length) result.palavras_chave = jobKeywords(jobText)
+    } else {
       const basic = basicAdaptation({
         jobText,
         sections: content.sections,
@@ -185,32 +247,31 @@ Deno.serve(
         location: fetched.location,
         language: resume.language,
       })
-      const gainBasic = basic.mudancas.reduce((s, m) => s + m.impacto, 0)
-      return json({
-        adaptation: {
-          ...basic,
-          compat_depois: Math.min(95, basic.compat_antes + gainBasic),
-          vaga_texto: jobText,
-          vaga_url: jobUrl || null,
-          job_id: jobId,
-        },
-      })
+      result = { vaga: basic.vaga, palavras_chave: basic.palavras_chave, mudancas: basic.mudancas, basica: true, aviso: basic.aviso }
     }
-    step('resposta da IA validada')
-    // nenhum número inventado chega à tela: o que não está no currículo nem no anúncio vira [X]
-    raw.mudancas = raw.mudancas.map((m) => ({ ...m, depois: guardInventedNumbers(m.depois, [prompt]) }))
-    const result = redacted.restore(raw)
 
-    // dados lidos do próprio site têm preferência sobre o que a IA extraiu
-    result.vaga.titulo = fetched.title || result.vaga.titulo
-    result.vaga.empresa = fetched.company || result.vaga.empresa
-    result.vaga.local = fetched.location || result.vaga.local
+    // palavras-chave: calculadas aqui (não pela IA), no currículo original e com cada mudança
+    const originalNorm = resumeComparableText(content.sections)
+    const kw = keywordScore(result.palavras_chave, originalNorm)
+    const missing = result.palavras_chave.filter((k) => !kw.presentes.includes(k))
+    const perKeyword = result.palavras_chave.length ? 100 / result.palavras_chave.length : 0
+    const mudancas = result.mudancas.map((m) => {
+      const cobre = missing.filter((k) => containsTerm(normalize(m.depois), k))
+      return { ...m, cobre, impacto: Math.round(cobre.length * perKeyword) }
+    })
+    const covered = new Set([...kw.presentes, ...mudancas.flatMap((m) => m.cobre)])
+    const after = result.palavras_chave.length ? Math.round((100 * covered.size) / result.palavras_chave.length) : 0
 
-    const gain = result.mudancas.reduce((s, m) => s + m.impacto, 0)
     return json({
       adaptation: {
         ...result,
-        compat_depois: Math.min(95, result.compat_antes + gain),
+        mudancas,
+        // "compat_*" = palavras-chave da vaga (o que a adaptação melhora); a nota principal é a aderência
+        compat_antes: kw.nota,
+        compat_depois: after,
+        palavras_presentes: kw.presentes,
+        palavras_faltando: missing,
+        aderencia,
         vaga_texto: jobText,
         vaga_url: jobUrl || null,
         job_id: jobId,

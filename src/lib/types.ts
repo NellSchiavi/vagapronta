@@ -14,6 +14,31 @@ export type JobStatus = 'nova' | 'salva' | 'descartada'
 export type WorkMode = 'presencial' | 'hibrido' | 'remoto'
 export type LetterTone = 'formal' | 'caloroso' | 'direto'
 
+export type ReqStatus = 'atende' | 'parcial' | 'nao_atende'
+
+/** Um requisito da vaga conferido no currículo ORIGINAL */
+export interface Requirement {
+  requisito: string
+  tipo: 'obrigatorio' | 'desejavel'
+  categoria: 'experiencia' | 'formacao' | 'registro' | 'ferramenta' | 'idioma' | 'outro'
+  status: ReqStatus
+  /** trecho do currículo que comprova ("" quando não há) */
+  evidencia: string
+  /** dica honesta para "parcial" e "nao_atende" */
+  dica: string
+}
+
+/** Aderência aos requisitos: quanto a pessoa realmente atende ao que a vaga pede (nota principal) */
+export interface Adherence {
+  nota: number
+  /** teto aplicado por requisito obrigatório não atendido (70) ou atendido em parte (85) */
+  teto: number | null
+  limitada?: boolean
+  requisitos: Requirement[]
+  /** checklist feito sem IA */
+  basica?: boolean
+}
+
 export interface MatchNotes {
   pontos_fortes?: string[]
   lacunas?: string[]
@@ -27,6 +52,10 @@ export interface MatchNotes {
   area?: string
   /** parecida no nome, mas de outra área (ex.: engenharia biomédica): fica no fim */
   fora_da_area?: boolean
+  /** nota de palavras-chave da vaga (quanto o currículo usa os termos do anúncio) */
+  palavras?: number
+  /** aderência aos requisitos; quando existe, "compatibility" guarda esta nota */
+  aderencia?: Adherence
 }
 
 export type Job = Omit<Row<'jobs'>, 'source' | 'status' | 'work_mode' | 'match_notes'> & {
@@ -89,15 +118,20 @@ export interface AdaptChange {
   motivo: string
   antes: string
   depois: string
-  /** pontos percentuais de compatibilidade que a mudança acrescenta */
+  /** pontos percentuais de palavras-chave que a mudança acrescenta */
   impacto: number
+  /** palavras-chave da vaga que esta mudança acrescenta ao currículo */
+  cobre?: string[]
 }
 
 /** Resultado da função adaptar-vaga (nada é salvo até a pessoa confirmar) */
 export interface Adaptation {
   vaga: { titulo: string; empresa?: string; local?: string; modalidade?: WorkMode | null; resumo: string }
+  /** palavras-chave da vaga: hoje e com todas as mudanças */
   compat_antes: number
   compat_depois: number
+  /** aderência aos requisitos (nota principal), sobre o currículo ORIGINAL */
+  aderencia?: Adherence | null
   palavras_chave: string[]
   mudancas: AdaptChange[]
   vaga_texto: string

@@ -3,6 +3,7 @@ import { AlertCircle, ArrowUpRight, Info, RotateCw, Sparkles, X } from 'lucide-r
 import { Link } from 'react-router-dom'
 import { AiUsageNote } from '@/components/ai/ai-usage-note'
 import { CompanyInitial, MatchPill } from '@/components/brand/pills'
+import { jobScore } from '@/lib/job-score'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Field } from '@/components/ui/field'
@@ -179,7 +180,7 @@ export function AdaptForm({ bases, defaultBaseId, jobId, initialUrl, initialText
                 {[job.company, job.location, job.work_mode ? WORK_MODE_LABEL[job.work_mode] : null].filter(Boolean).join(' · ')}
               </p>
             </div>
-            {job.compatibility !== null && <MatchPill value={job.compatibility} className="hidden sm:inline-flex" />}
+            {job && jobScore(job) && <MatchPill value={jobScore(job)!.value} kind={jobScore(job)!.kind} className="hidden sm:inline-flex" />}
             <Button variant="ghost" size="icon" onClick={onClearJob} aria-label="Usar outra vaga">
               <X aria-hidden />
             </Button>

@@ -7,6 +7,14 @@
  *   4. vaga nova acima de 85%           → adaptar o currículo para a vaga
  *   5. nada pendente                    → incentivo
  */
+import { jobScore } from '@/lib/job-score'
+import type { MatchNotes } from '@/lib/types'
+
+/** "72% aderência" ou "80% palavras-chave" (nunca uma "compatibilidade" sem dizer qual) */
+function scoreText(j: { compatibility: number | null; match_notes?: MatchNotes | null }) {
+  const s = jobScore(j)
+  return s ? `${s.value}% ${s.kind === 'aderencia' ? 'aderência' : 'palavras-chave'}` : ''
+}
 
 export const LOW_SCORE = 70
 export const HIGH_MATCH = 85
@@ -19,7 +27,7 @@ export interface NextStepInput {
   /** candidaturas em andamento (enviada/entrevista) com data de follow-up */
   followUps: { id: string; company: string; follow_up_on: string | null; status: string }[]
   /** vagas com status "nova" */
-  newJobs: { id: string; title: string; company: string | null; compatibility: number | null }[]
+  newJobs: { id: string; title: string; company: string | null; compatibility: number | null; match_notes?: MatchNotes | null }[]
   /** vagas que já têm candidatura ou currículo adaptado (não sugerir de novo) */
   handledJobIds: Set<string>
   /** data de hoje no formato AAAA-MM-DD */
@@ -111,7 +119,7 @@ export function computeNextStep(input: NextStepInput): NextStep {
     return {
       kind: 'adapt',
       title: `Adapte seu currículo para ${best.title}`,
-      meta: [best.company, `${best.compatibility}% compatível`].filter(Boolean).join(' · '),
+      meta: [best.company, scoreText(best)].filter(Boolean).join(' · '),
       description: 'Uma vaga que combina muito com você. Ajustar o currículo para ela aumenta suas chances.',
       action: { label: 'Adaptar', to: `/adaptar?vaga=${best.id}` },
     }

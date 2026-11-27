@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button'
 import { countryInfo } from '@/lib/paises'
 import { relativeDay } from '@/lib/dates'
 import { friendlyDataError } from '@/lib/errors'
+import { jobScore, SCORE_DISCLAIMER } from '@/lib/job-score'
 import { setJobStatus, SOURCE_LABEL } from '@/lib/queries/jobs'
+import { RequirementsList } from '@/components/ai/requirements-checklist'
 import { WORK_MODE_LABEL, type Job } from '@/lib/types'
 import { isExampleJob, linkHost, safeHttpUrl } from '@/lib/safe-link'
 import { cn } from '@/lib/utils'
@@ -51,6 +53,8 @@ export function JobCard({ job, priority }: { job: Job; priority: number | null }
   const warnings = jobWarnings(job)
   const source = SOURCE_LABEL[job.source] ?? job.source
   const where = [job.company, job.location].filter(Boolean).join(' · ')
+  const score = jobScore(job)
+  const adherence = job.match_notes?.aderencia
 
   async function discard() {
     try {
@@ -85,7 +89,7 @@ export function JobCard({ job, priority }: { job: Job; priority: number | null }
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
-        {job.compatibility != null && <MatchPill value={job.compatibility} />}
+        {score && <MatchPill value={score.value} kind={score.kind} />}
         {job.destination && (
           <span className="inline-flex items-center gap-1 rounded-full bg-terra-soft px-2.5 py-1 font-medium text-terra-strong">
             <MapPin className="size-3" aria-hidden />
@@ -113,6 +117,21 @@ export function JobCard({ job, priority }: { job: Job; priority: number | null }
         </p>
       ) : null}
       {job.salary && <p className="mt-1 text-[13px] text-muted">Salário: {job.salary}</p>}
+
+      {adherence?.requisitos?.length ? (
+        <details className="mt-3 rounded-[10px] bg-bg px-3 py-2">
+          <summary className="min-h-touch cursor-pointer content-center text-sm font-medium">
+            Requisitos da vaga: {adherence.requisitos.filter((r) => r.status === 'atende').length} de {adherence.requisitos.length} atendidos
+          </summary>
+          <div className="pb-2 pt-1">
+            <RequirementsList adherence={adherence} compact />
+            <p className="mt-3 text-xs text-muted">
+              {adherence.basica ? 'Conferido sem IA, pelas palavras do anúncio. Use "Adaptar currículo" para uma avaliação completa. ' : ''}
+              {SCORE_DISCLAIMER}
+            </p>
+          </div>
+        </details>
+      ) : null}
 
       {example ? (
         <div className="mt-4 space-y-2">

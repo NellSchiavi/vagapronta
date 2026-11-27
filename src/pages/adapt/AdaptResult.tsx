@@ -3,11 +3,14 @@ import { animate, motion, useMotionValue, useTransform } from 'framer-motion'
 import { AlertCircle, ArrowRight, Check, RotateCcw, RotateCw, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { GapEditor, GapText } from '@/components/ai/gap-text'
+import { RequirementsChecklist } from '@/components/ai/requirements-checklist'
+import { ScoreRing } from '@/components/brand/score-ring'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { friendlyDataError } from '@/lib/errors'
 import { hasGaps } from '@/lib/gaps'
+import { SCORE_DISCLAIMER, SCORE_LABEL } from '@/lib/job-score'
 import { mentionedInResume, resumeSearchText } from '@/lib/resume'
 import { SkillPicker, splitSkills } from '@/components/ai/skill-picker'
 import { estimatedAfter, useSaveAdaptation, type SavedAdaptation } from '@/lib/queries/adapt'
@@ -55,7 +58,7 @@ export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone,
   const [textEdits, setEdits] = useState<string[]>(() => a.mudancas.map((m) => m.depois))
   const edits = a.mudancas.map((m, i) => (m.secao === 'habilidades' ? picked[i].join(', ') : textEdits[i]))
   const { save, undo } = useSaveAdaptation()
-  const after = estimatedAfter(a, accepted)
+  const after = estimatedAfter(a, accepted, edits)
   const count = accepted.filter(Boolean).length
   const allOn = count === a.mudancas.length
   const pendingGaps = a.mudancas.filter((_, i) => accepted[i] && hasGaps(edits[i])).length
@@ -118,30 +121,43 @@ export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone,
         {meta && <p className="text-muted">{meta}</p>}
         {a.vaga.resumo && <p className="mt-2 text-[15px]">{a.vaga.resumo}</p>}
 
-        <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-card-sm bg-bg p-4 text-center sm:max-w-md">
-          <div>
-            <p className="text-sm text-muted">Hoje</p>
-            <p className="font-serif text-[34px] font-medium leading-tight tabular-nums text-ink/70">{a.compat_antes}%</p>
+        {a.aderencia ? (
+          <div className="mt-5 flex items-center gap-4 rounded-card-sm bg-bg p-4">
+            <ScoreRing value={a.aderencia.nota} size={84} label={SCORE_LABEL.aderencia} />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">{SCORE_LABEL.aderencia}</p>
+              <p className="mt-0.5 text-sm text-muted">
+                Quanto você realmente atende ao que a vaga pede, pelo seu currículo original. As mudanças abaixo não mudam esta nota.
+              </p>
+              {a.aderencia.teto === 70 && (
+                <p className="mt-1 text-sm text-warn">Há requisito obrigatório que seu currículo não mostra: a nota fica em no máximo 70%.</p>
+              )}
+            </div>
           </div>
-          <ArrowRight className="size-6 text-terra" aria-hidden />
-          <div>
-            <p className="text-sm text-muted">Com as mudanças</p>
-            <AnimatedPct
-              value={after}
-              className={cn('font-serif text-[34px] font-medium leading-tight tabular-nums', after > 85 ? 'text-success' : 'text-terra-strong')}
-            />
-          </div>
-        </div>
-        <p className="sr-only" aria-live="polite">
-          Compatibilidade: hoje {a.compat_antes}%, com as mudanças marcadas {after}%.
-        </p>
-        <p className="mt-2 text-[13px] text-muted">
-          {a.basica && a.palavras_presentes
-            ? `Compatibilidade por palavras-chave: ${a.palavras_presentes.length} de ${a.palavras_chave.length} já estão no seu currículo. Ela muda conforme você marca ou desmarca as mudanças.`
-            : 'Compatibilidade estimada pela IA. Ela muda conforme você marca ou desmarca as mudanças.'}
-        </p>
+        ) : null}
 
-        {a.basica && a.palavras_presentes && a.palavras_faltando ? (
+        <div className="mt-4">
+          <p className="text-sm font-medium">{SCORE_LABEL.palavras}</p>
+          <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-card-sm bg-bg p-3 text-center sm:max-w-md">
+            <div>
+              <p className="text-sm text-muted">Hoje</p>
+              <p className="font-serif text-[28px] font-medium leading-tight tabular-nums text-ink/70">{a.compat_antes}%</p>
+            </div>
+            <ArrowRight className="size-5 text-terra" aria-hidden />
+            <div>
+              <p className="text-sm text-muted">Com as mudanças</p>
+              <AnimatedPct value={after} className="font-serif text-[28px] font-medium leading-tight tabular-nums text-terra-strong" />
+            </div>
+          </div>
+          <p className="sr-only" aria-live="polite">
+            Palavras-chave da vaga: hoje {a.compat_antes}%, com as mudanças marcadas {after}%.
+          </p>
+          <p className="mt-2 text-[13px] text-muted">
+            Quanto o currículo usa os termos do anúncio. É o que a adaptação melhora: muda conforme você marca ou desmarca as mudanças.
+          </p>
+        </div>
+
+        {a.palavras_presentes && a.palavras_faltando ? (
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <KeywordList title="Já estão no seu currículo" items={a.palavras_presentes} tone="success" empty="Nenhuma ainda." />
             <KeywordList title="Faltam no seu currículo" items={a.palavras_faltando} tone="warn" empty="Nenhuma: seu currículo já cita todas." />
@@ -158,7 +174,10 @@ export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone,
             </ul>
           </div>
         )}
+        <p className="mt-4 text-[13px] text-muted">{SCORE_DISCLAIMER}</p>
       </Card>
+
+      {a.aderencia && <RequirementsChecklist adherence={a.aderencia} />}
 
       <section aria-labelledby="mudancas-titulo">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
@@ -195,7 +214,7 @@ export function AdaptResult({ adaptation: a, base, onDiscard, onSaved, onUndone,
                       {SECTION_LABEL[m.secao]}
                     </span>
                     {m.impacto > 0 && (
-                      <span className="rounded-full bg-success-soft px-2 py-0.5 text-xs font-medium text-success">+{m.impacto}%</span>
+                      <span className="rounded-full bg-success-soft px-2 py-0.5 text-xs font-medium text-success">+{m.impacto}% palavras-chave</span>
                     )}
                   </div>
                   <p className="mt-1.5 font-medium">{m.titulo}</p>

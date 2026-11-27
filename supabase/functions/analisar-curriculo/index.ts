@@ -138,7 +138,7 @@ Deno.serve(
       }))
       // nenhum número inventado chega à tela: o que não está no currículo vira [X]
       raw.suggestions = raw.suggestions.map((s) => ({ ...s, depois: guardInventedNumbers(s.depois, [redacted.text, prompt]) }))
-      analysis = redacted.restore(raw)
+      analysis = redacted.restore(raw) as typeof analysis
     } catch (err) {
       if (!isAiFailure(err)) throw err
       // modo reserva sem IA (a cota já foi devolvida): nota pela estrutura, marcada como "básica"

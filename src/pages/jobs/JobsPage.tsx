@@ -4,6 +4,7 @@ import { RefreshCw, Search, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { EmptyState } from '@/components/brand/empty-state'
 import { PageHeader } from '@/components/layout/page-header'
+import { SCORE_DISCLAIMER } from '@/lib/job-score'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { LoadingCards } from '@/components/ui/skeleton'
@@ -102,6 +103,10 @@ export function JobsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Vagas" description="Vagas que combinam com você, encontradas todos os dias de manhã." />
+      <p className="-mt-3 text-[13px] text-muted">
+        A nota de cada vaga é a <strong className="font-medium text-ink/80">aderência aos requisitos</strong> (o que você realmente atende) quando o anúncio
+        traz requisitos; senão, mostramos as <strong className="font-medium text-ink/80">palavras-chave</strong>. {SCORE_DISCLAIMER}
+      </p>
 
       {roles.length === 0 ? (
         <EmptyState

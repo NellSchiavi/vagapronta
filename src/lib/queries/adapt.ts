@@ -4,7 +4,8 @@ import { invokeAi } from '@/lib/ai'
 import { applySuggestion } from '@/lib/apply-suggestion'
 import type { Resume, ResumeContent, ResumeSections } from '@/lib/resume'
 import { asJson, supabase } from '@/lib/supabase'
-import type { Adaptation, Job } from '@/lib/types'
+import { keywordsAfter } from '@/lib/job-score'
+import type { Adaptation, Job, MatchNotes } from '@/lib/types'
 
 export function useJob(jobId: string | null) {
   return useQuery({
@@ -27,10 +28,9 @@ export function adaptResume(args: { resumeId: string; jobText?: string; jobUrl?:
   }).then((r) => r.adaptation)
 }
 
-/** Compatibilidade estimada considerando só as mudanças aceitas */
-export function estimatedAfter(a: Adaptation, accepted: boolean[]) {
-  const gain = a.mudancas.reduce((s, m, i) => s + (accepted[i] ? m.impacto : 0), 0)
-  return Math.min(95, a.compat_antes + gain)
+/** Palavras-chave da vaga considerando só as mudanças aceitas (e o texto final de cada uma) */
+export function estimatedAfter(a: Adaptation, accepted: boolean[], edits?: string[]) {
+  return keywordsAfter(a, accepted, edits)
 }
 
 /**
@@ -54,7 +54,7 @@ export interface SavedAdaptation {
   jobId: string
   createdJob: boolean
   /** como a vaga estava antes (para o Desfazer devolver igual) */
-  previousJob: { compatibility: number | null; status: string } | null
+  previousJob: { compatibility: number | null; status: string; match_notes?: MatchNotes } | null
   skipped: number
   title: string
 }
@@ -81,16 +81,26 @@ export function useSaveAdaptation() {
       edits: string[]
     }): Promise<SavedAdaptation> => {
       const { sections, skipped } = applyAccepted(base.content.sections!, adaptation, accepted, edits)
-      const after = estimatedAfter(adaptation, accepted)
+      const after = estimatedAfter(adaptation, accepted, edits)
       const v = adaptation.vaga
+      // a nota da vaga é a ADERÊNCIA (currículo original): as mudanças aceitas não a aumentam
+      const ad = adaptation.aderencia
+      const notes: MatchNotes = {
+        palavras: after,
+        ...(ad ? { aderencia: { ...ad, requisitos: ad.requisitos.slice(0, 12) } } : {}),
+      }
+      const compatibility = ad ? ad.nota : after
 
       let jobId = adaptation.job_id
       let createdJob = false
       let previousJob: SavedAdaptation['previousJob'] = null
       if (jobId) {
-        const { data: prev } = await supabase.from('jobs').select('compatibility, status').eq('id', jobId).maybeSingle()
-        previousJob = prev ?? null
-        const { error } = await supabase.from('jobs').update({ compatibility: after, status: 'salva' }).eq('id', jobId)
+        const { data: prev } = await supabase.from('jobs').select('compatibility, status, match_notes').eq('id', jobId).maybeSingle()
+        previousJob = prev ? { compatibility: prev.compatibility, status: prev.status, match_notes: prev.match_notes as MatchNotes } : null
+        const { error } = await supabase
+          .from('jobs')
+          .update({ compatibility, status: 'salva', match_notes: asJson({ ...((prev?.match_notes as MatchNotes) ?? {}), ...notes }) })
+          .eq('id', jobId)
         if (error) throw error
       } else {
         const { data, error } = await supabase
@@ -103,7 +113,8 @@ export function useSaveAdaptation() {
             work_mode: v.modalidade ?? null,
             url: adaptation.vaga_url,
             description: adaptation.vaga_texto.slice(0, 20000),
-            compatibility: after,
+            compatibility,
+            match_notes: asJson(notes),
             status: 'salva',
           })
           .select('id')
@@ -133,7 +144,7 @@ export function useSaveAdaptation() {
         .single()
       if (error) {
         if (createdJob) await supabase.from('jobs').delete().eq('id', jobId!)
-        else if (previousJob) await supabase.from('jobs').update(previousJob).eq('id', jobId!)
+        else if (previousJob) await supabase.from('jobs').update(restoreJob(previousJob)).eq('id', jobId!)
         throw error
       }
       return { resumeId: resume.id, jobId: jobId!, createdJob, previousJob, skipped, title }
@@ -146,10 +157,15 @@ export function useSaveAdaptation() {
       const { error } = await supabase.from('resumes').delete().eq('id', s.resumeId)
       if (error) throw error
       if (s.createdJob) await supabase.from('jobs').delete().eq('id', s.jobId)
-      else if (s.previousJob) await supabase.from('jobs').update(s.previousJob).eq('id', s.jobId)
+      else if (s.previousJob) await supabase.from('jobs').update(restoreJob(s.previousJob)).eq('id', s.jobId)
     },
     onSuccess: refresh,
   })
 
   return { save, undo }
+}
+
+/** Como a vaga estava antes de salvar a adaptação (para o Desfazer) */
+function restoreJob(p: NonNullable<SavedAdaptation['previousJob']>) {
+  return { compatibility: p.compatibility, status: p.status, ...(p.match_notes ? { match_notes: asJson(p.match_notes) } : {}) }
 }

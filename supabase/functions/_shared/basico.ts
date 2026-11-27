@@ -37,7 +37,8 @@ const STOP = new Set(
     'el la los las del para con por una unos unas que en al se su sus es son puesto empresa ' +
     'realizar garantir executar acompanhar apoiar elaborar desenvolver manter assegurar participar efetuar conduzir ' +
     'atender organizar preparar registrar verificar monitorar orientar identificar avaliar implementar promover ' +
-    'responsavel responsaveis possuir saber gostar contribuir buscar oferecer oferecemos garantia'
+    'responsavel responsaveis possuir saber gostar contribuir buscar oferecer oferecemos garantia ' +
+    'ativo ativa minimo pelo menos preferencialmente'
   ).split(' '),
 )
 
@@ -86,6 +87,11 @@ export function containsTerm(normText: string, term: string): boolean {
 const isVerbLike = (w: string) => /(ando|endo|indo|mente)$/.test(w) && w.length > 5
 const goodWord = (w: string) => w.length >= 3 && !STOP.has(w) && !/^\d+$/.test(w) && !isVerbLike(w)
 
+/** Palavras com conteúdo de um texto (normalizadas, sem repetir e sem "jargão" de anúncio) */
+export function contentWords(text: string): string[] {
+  return [...new Set(normalize(text).split(/[^a-z0-9+#]+/).filter((w) => w.length >= 4 && goodWord(w)))]
+}
+
 /** Trecho de requisitos/qualificações do anúncio (onde ficam as palavras-chave mais importantes) */
 function requirementsPart(norm: string) {
   const m = /(requisitos|qualificacoes|o que buscamos|o que esperamos|perfil desejado|conhecimentos|requirements|qualifications)/.exec(norm)
@@ -120,7 +126,7 @@ export function jobKeywords(jobText: string, max = 14): string[] {
   for (const m of jobText.matchAll(/\b([A-Z][A-Z0-9]{1,6}(?:[-/][A-Z0-9]{1,6})?)\b/g)) {
     const raw = m[1]
     const key = normalize(raw)
-    if (STOP.has(key) || /^(CLT|PJ|VR|VA|PLR|CNPJ|CPF|RH|SP|RJ|MG|PR|RS|SC|BA|PE|CE|DF|GO|ES|PT|BR|EUA|LTDA|SA)$/.test(raw)) continue
+    if (STOP.has(key) || /^[IVX]+$/.test(raw) || /^(CLT|PJ|VR|VA|PLR|CNPJ|CPF|RH|SP|RJ|MG|PR|RS|SC|BA|PE|CE|DF|GO|ES|PT|BR|EUA|LTDA|SA)$/.test(raw)) continue
     if (taken.some((t) => t === key || t.split(' ').includes(key))) continue
     add(key, 3, raw)
   }
@@ -281,7 +287,7 @@ export function basicAdaptation(input: {
     const antes = exp.descricao!.replace(/\s+/g, ' ').trim()
     mudancas.push({
       secao: 'experiencia',
-      titulo: `Se você já trabalhou com ${/^[A-Z][a-zà-ú]/.test(termo) ? termo.charAt(0).toLowerCase() + termo.slice(1) : termo}, conte em ${exp.cargo}`,
+      titulo: `Se você já trabalhou com ${/^[A-Z][a-zà-ú]/.test(termo) ? termo.toLowerCase() : termo}, conte em ${exp.cargo}`,
       motivo: `A vaga pede "${termo}". Se você fez isso em ${exp.empresa}, descreva com suas palavras no lugar da lacuna; se não fez, desmarque.`,
       antes,
       depois: `${sentence(antes)} ${lacuna(`como você usou ${termo}`)}`,

@@ -4,7 +4,7 @@ import { startOfToday, toISODate } from '@/lib/dates'
 import { computeNextStep, HIGH_MATCH, type NextStep } from '@/lib/next-step'
 import { profileCompleteness } from '@/lib/profile-completeness'
 import { supabase } from '@/lib/supabase'
-import type { WorkMode } from '@/lib/types'
+import type { MatchNotes, WorkMode } from '@/lib/types'
 
 export interface HomeJob {
   id: string
@@ -13,6 +13,8 @@ export interface HomeJob {
   location: string | null
   work_mode: WorkMode | null
   compatibility: number | null
+  /** aderência aos requisitos, quando já avaliada (lib/job-score.ts) */
+  match_notes?: MatchNotes | null
   created_at: string
 }
 
@@ -54,7 +56,7 @@ export function useHomeData() {
         supabase.from('applications').select('id, company, role, status, follow_up_on, job_id'),
         supabase
           .from('jobs')
-          .select('id, title, company, location, work_mode, compatibility, created_at')
+          .select('id, title, company, location, work_mode, compatibility, match_notes, created_at')
           .eq('status', 'nova')
           .order('compatibility', { ascending: false, nullsFirst: false }),
         supabase.from('profiles').select('full_name, city').eq('user_id', user!.id).maybeSingle(),
