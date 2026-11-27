@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, Check, Copy, RotateCw, Sparkles } from 'lucide-react'
+import { AlertCircle, ArrowDown, ArrowUp, Check, Copy, RotateCw, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { AiProgress } from '@/components/ai/ai-progress'
 import { AiUsageNote } from '@/components/ai/ai-usage-note'
@@ -46,8 +46,8 @@ export function startAnalysis(resumeId: string) {
     onSuccess: (a, { onPage }) => {
       refreshResumeData(a.resume_id)
       if (onPage) {
-        toast.success(`Pronto! Sua nota é ${a.overall_score}.`, {
-          description: 'A análise foi guardada no seu histórico.',
+        toast.success(a.scores.basica ? `Análise básica pronta: nota ${a.overall_score}.` : `Pronto! Sua nota é ${a.overall_score}.`, {
+          description: a.scores.basica ? 'A IA está sobrecarregada agora. Tente a análise completa em alguns minutos.' : 'A análise foi guardada no seu histórico.',
           action: {
             label: 'Desfazer',
             onClick: () => deleteAnalysis(a).catch((e) => toast.error(friendlyDataError(e, 'Não conseguimos desfazer.'))),
@@ -129,6 +129,18 @@ export function AnalysisPanel({ resume }: { resume: Resume }) {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {latest.scores.basica && (
+        <div role="status" className="flex flex-col gap-3 rounded-card-sm border border-warn/40 bg-warn-soft p-4 sm:flex-row sm:items-center">
+          <AlertCircle className="size-5 shrink-0 text-warn" aria-hidden />
+          <p className="flex-1 text-[15px]">
+            Análise básica: a IA está sobrecarregada agora. Tente a análise completa em alguns minutos.
+            <span className="mt-0.5 block text-sm text-muted">Esta nota olha só a estrutura do currículo e não contou no seu limite do dia.</span>
+          </p>
+          <Button variant="secondary" onClick={run} className="shrink-0">
+            <RotateCw aria-hidden /> Tentar análise completa
+          </Button>
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
         <Card className="flex flex-col items-center gap-4 p-6 text-center sm:flex-row sm:text-left">
           <ScoreRing value={latest.overall_score} size={132} />
@@ -298,10 +310,14 @@ function History({ analyses }: { analyses: ResumeAnalysis[] }) {
       <ol className="mt-4 space-y-3">
         {rows.map((a, i) => {
           const prev = analyses[i + 1]
-          const delta = prev ? a.overall_score - prev.overall_score : null
+          // a análise básica (sem IA) usa outra régua: não compara com a anterior
+          const delta = prev && !a.scores.basica && !prev.scores.basica ? a.overall_score - prev.overall_score : null
           return (
             <li key={a.id} className="flex items-center gap-3">
-              <span className="w-[86px] shrink-0 text-sm text-muted">{fmtDate(a.created_at).replace(/ de \d{4}$/, '')}</span>
+              <span className="w-[86px] shrink-0 text-sm text-muted">
+                {fmtDate(a.created_at).replace(/ de \d{4}$/, '')}
+                {a.scores.basica && <span className="block text-xs">básica</span>}
+              </span>
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-track" aria-hidden>
                 <div className={cn('h-full rounded-full', i === 0 ? 'bg-terra' : 'bg-terra/40')} style={{ width: `${a.overall_score}%` }} />
               </div>

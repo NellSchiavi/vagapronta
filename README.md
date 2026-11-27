@@ -306,6 +306,9 @@ O `seed.sql` (dados de exemplo) é só local. Na nuvem, cada pessoa cria a próp
 - **Tarefas simples (organizar o currículo):** usam um modelo "lite", que é mais leve e economiza cota.
 - **Análise, adaptação e cartas:** usam o modelo "flash".
 - **Troca de modelo:** as variáveis `GEMINI_MODEL` e `GEMINI_MODEL_LITE` aceitam uma lista, em ordem de preferência. Os modelos da versão 2.5 não são mais oferecidos a chaves novas.
+- **Google sobrecarregado (503):** o app tenta de novo com espera crescente e passa sozinho para o próximo modelo, com a mesma chave: flash → flash-lite → Gemma (`GEMMA_MODELS`, padrão `gemma-4-26b-a4b-it,gemma-4-31b-it`, gratuitos). Tudo dentro de 100 s. Uma chamada que falha nunca conta no limite do dia.
+- **Modo reserva sem IA:** se todos os modelos falharem, o Adaptar e a Análise fazem uma análise básica por palavras-chave e estrutura (`_shared/basico.ts`), com o aviso "Análise básica". Também não conta no limite do dia.
+- **Testar a falha sem gastar cota:** `AI_TEST_EMAIL` (e-mail da conta de teste) e `AI_TEST_FAIL` (`*` ou lista de modelos) simulam o 503 só para essa conta, sem chamar o Google. Apague os dois depois do teste. Os testes automáticos (`npm test`) nunca chamam o Google.
 
 **Privacidade:** antes de enviar o currículo para a IA, o app troca **e-mail, telefone, CPF, CEP, endereço e links pessoais** por marcadores (`[EMAIL_1]`, `[TELEFONE_1]`…). Esses dados nunca saem do servidor do app e são recolocados no resultado. Veja `supabase/functions/_shared/privacy.ts`.
 

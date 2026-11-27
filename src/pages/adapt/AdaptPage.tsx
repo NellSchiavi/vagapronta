@@ -89,6 +89,7 @@ export function AdaptPage() {
             window.scrollTo({ top: 0, behavior: 'smooth' })
           }}
           onUndone={() => setSaved(null)}
+          onRetryFull={task.result.basica ? task.retry : undefined}
         />
       )
     }

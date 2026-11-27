@@ -4,7 +4,7 @@
  * - startAiTask() dispara a chamada e guarda o estado fora dos componentes.
  * - Ao terminar: se a pessoa está na tela da tarefa, a própria tela mostra o
  *   resultado; se está em outra, aparece um aviso "… ficou pronta" com "Ver".
- * - Depois de 90 s sem resposta, a tarefa fica "lenta": a tela oferece
+ * - Depois de 120 s sem resposta (o servidor responde antes disso, com a IA ou com o modo básico), a tarefa fica "lenta": a tela oferece
  *   "Tentar de novo" (e, se a resposta chegar depois, ela ainda é usada).
  * - Limite POR MINUTO da IA: a tarefa fica "aguardando" e tenta de novo
  *   sozinha (até 2 vezes), sem a pessoa fazer nada.
@@ -16,7 +16,7 @@ import { toast } from 'sonner'
 import { AiError, showAiError } from '@/lib/ai'
 import { queryClient } from '@/lib/query-client'
 
-export const SLOW_AFTER_MS = 90_000
+export const SLOW_AFTER_MS = 120_000
 /** novas tentativas automáticas quando a IA está no limite por minuto */
 export const AUTO_RETRIES = 2
 

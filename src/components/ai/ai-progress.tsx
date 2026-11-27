@@ -63,9 +63,9 @@ export function AiProgress({ steps, startedAt, status = 'running', onRetry, retr
         <span className="inline-flex size-14 items-center justify-center rounded-full bg-track text-muted">
           <Hourglass className="size-6" aria-hidden />
         </span>
-        <p className="font-serif text-xl">A IA está demorando mais que o normal</p>
+        <p className="font-serif text-xl">O serviço de IA está sobrecarregado neste momento</p>
         <p className="max-w-md text-[15px] text-muted">
-          Às vezes ela fica muito procurada. Você pode tentar de novo agora ou continuar esperando: se a resposta chegar,
+          Isso não conta no seu limite do dia. Você pode tentar de novo agora ou continuar esperando: se a resposta chegar,
           avisamos.
         </p>
         {onRetry && (

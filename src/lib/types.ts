@@ -47,6 +47,8 @@ export interface AnalysisScores {
   palavras_chave: number
   estrutura: number
   clareza: number
+  /** análise básica, sem IA (a IA estava sobrecarregada) */
+  basica?: boolean
 }
 
 export interface AnalysisSuggestion {
@@ -101,6 +103,11 @@ export interface Adaptation {
   vaga_texto: string
   vaga_url: string | null
   job_id: string | null
+  /** análise básica por palavras-chave, sem IA (a IA estava sobrecarregada) */
+  basica?: boolean
+  aviso?: string
+  palavras_presentes?: string[]
+  palavras_faltando?: string[]
 }
 
 export const WORK_MODE_LABEL: Record<WorkMode, string> = {

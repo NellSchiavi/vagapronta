@@ -5,7 +5,8 @@
  * NÃO grava nada: a pessoa marca o que aceita e salva uma nova versão na tela.
  */
 import { z } from 'npm:zod@3.24.1'
-import { generateJson } from '../_shared/ai.ts'
+import { generateJson, isAiFailure } from '../_shared/ai.ts'
+import { basicAdaptation } from '../_shared/basico.ts'
 import { requireUser } from '../_shared/auth.ts'
 import { fetchJobFromUrl } from '../_shared/fetch-job.ts'
 import { cleanJobUrl } from '../_shared/links.ts'
@@ -160,15 +161,41 @@ Deno.serve(
       '"""',
     ].join('\n')
 
-    const raw = await quota.guard(() => generateJson({
-      task: 'adaptar-vaga',
-      system: ADAPT_SYSTEM,
-      prompt,
-      schema: adaptSchema,
-      temperature: 0.35,
-      tier: 'standard',
-      mock: () => mockAdaptation(resumeText, jobText, content.sections?.experiencias?.[0]?.descricao),
-    }))
+    let raw: Adaptation
+    try {
+      raw = await quota.guard(() => generateJson({
+        task: 'adaptar-vaga',
+        system: ADAPT_SYSTEM,
+        prompt,
+        schema: adaptSchema,
+        temperature: 0.35,
+        tier: 'standard',
+        userEmail: user.email,
+        mock: () => mockAdaptation(resumeText, jobText, content.sections?.experiencias?.[0]?.descricao),
+      }))
+    } catch (err) {
+      if (!isAiFailure(err)) throw err
+      // modo reserva sem IA: a cota já foi devolvida (quota.guard) e a pessoa consegue adaptar mesmo assim
+      step(`IA indisponível (${err.code}): análise básica por palavras-chave`)
+      const basic = basicAdaptation({
+        jobText,
+        sections: content.sections,
+        title: fetched.title,
+        company: fetched.company,
+        location: fetched.location,
+        language: resume.language,
+      })
+      const gainBasic = basic.mudancas.reduce((s, m) => s + m.impacto, 0)
+      return json({
+        adaptation: {
+          ...basic,
+          compat_depois: Math.min(95, basic.compat_antes + gainBasic),
+          vaga_texto: jobText,
+          vaga_url: jobUrl || null,
+          job_id: jobId,
+        },
+      })
+    }
     step('resposta da IA validada')
     // nenhum número inventado chega à tela: o que não está no currículo nem no anúncio vira [X]
     raw.mudancas = raw.mudancas.map((m) => ({ ...m, depois: guardInventedNumbers(m.depois, [prompt]) }))

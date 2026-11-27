@@ -6,7 +6,8 @@
  * pessoa toca em "Aplicar sugestão" (e pode desfazer).
  */
 import { z } from 'npm:zod@3.24.1'
-import { generateJson } from '../_shared/ai.ts'
+import { generateJson, isAiFailure } from '../_shared/ai.ts'
+import { basicAnalysis } from '../_shared/basico.ts'
 import { requireUser } from '../_shared/auth.ts'
 import { handle, HttpError, json } from '../_shared/http.ts'
 import { promptRules } from '../_shared/paises.ts'
@@ -123,18 +124,27 @@ Deno.serve(
       '"""',
     ].join('\n')
 
-    const raw = await quota.guard(() => generateJson({
-      task: 'analisar-curriculo',
-      system: ANALYZE_SYSTEM,
-      prompt,
-      schema: analysisSchema,
-      temperature: 0.3,
-      tier: 'standard',
-      mock: () => mockAnalysis(text, content.sections?.experiencias?.[0]?.descricao, Boolean(content.sections?.resumo)),
-    }))
-    // nenhum número inventado chega à tela: o que não está no currículo vira [X]
-    raw.suggestions = raw.suggestions.map((s) => ({ ...s, depois: guardInventedNumbers(s.depois, [redacted.text, prompt]) }))
-    const analysis = redacted.restore(raw)
+    let analysis: Omit<Analysis, 'scores'> & { scores: Analysis['scores'] & { basica?: true } }
+    try {
+      const raw = await quota.guard(() => generateJson({
+        task: 'analisar-curriculo',
+        system: ANALYZE_SYSTEM,
+        prompt,
+        schema: analysisSchema,
+        temperature: 0.3,
+        tier: 'standard',
+        userEmail: user.email,
+        mock: () => mockAnalysis(text, content.sections?.experiencias?.[0]?.descricao, Boolean(content.sections?.resumo)),
+      }))
+      // nenhum número inventado chega à tela: o que não está no currículo vira [X]
+      raw.suggestions = raw.suggestions.map((s) => ({ ...s, depois: guardInventedNumbers(s.depois, [redacted.text, prompt]) }))
+      analysis = redacted.restore(raw)
+    } catch (err) {
+      if (!isAiFailure(err)) throw err
+      // modo reserva sem IA (a cota já foi devolvida): nota pela estrutura, marcada como "básica"
+      console.info(`[analisar-curriculo] IA indisponível (${err.code}): análise básica`)
+      analysis = basicAnalysis(content.sections, profile?.desired_role)
+    }
 
     const { data: saved, error: saveError } = await supabase
       .from('resume_analyses')
